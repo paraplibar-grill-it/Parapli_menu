@@ -4,6 +4,7 @@ import CategoryNavigation from '../components/CategoryNavigation';
 import MenuGrid from '../components/MenuGrid';
 import MenuQRCode from '../components/MenuQRCode';
 import SpecialOffersSection from '../components/SpecialOffersSection';
+import VirtualAssistant from '../components/VirtualAssistant';
 import { Umbrella } from 'lucide-react';
 
 const HomePage: React.FC = () => {
@@ -55,6 +56,8 @@ const HomePage: React.FC = () => {
       <section className="flex justify-center mb-16">
         <MenuQRCode value={menuUrl} />
       </section>
+
+      <VirtualAssistant />
     </div>
   );
 };
