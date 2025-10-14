@@ -205,7 +205,7 @@ const VirtualAssistant: React.FC = () => {
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">Commande confirmée !</h3>
             <p className="text-gray-600 text-base sm:text-lg mb-2">
-              Votre commande pour la table {tableNumber} a été envoyée à la cuisine.
+              Votre commande pour la table {tableNumber} a été envoyée au Bar.
             </p>
             <p className="text-gray-500 text-sm sm:text-base">
               Nous préparons votre commande avec soin.
