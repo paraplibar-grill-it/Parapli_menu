@@ -121,7 +121,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all shadow-md hover:shadow-lg"
           >
             <Plus size={18} />
-            <span className="font-semibold">Ajouter</span>
+            <span className="font-semibold"></span>
           </button>
         )}
       </div>
