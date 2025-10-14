@@ -1,4 +1,7 @@
 import React from 'react';
+import { Plus } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { toast } from 'react-hot-toast';
 import type { MenuItem } from '../types';
 
 interface MenuItemCardProps {
@@ -8,13 +11,19 @@ interface MenuItemCardProps {
   isAdmin?: boolean;
 }
 
-const MenuItemCard: React.FC<MenuItemCardProps> = ({ 
-  item, 
-  onEdit, 
+const MenuItemCard: React.FC<MenuItemCardProps> = ({
+  item,
+  onEdit,
   onDelete,
   isAdmin = false
 }) => {
   const [imageError, setImageError] = React.useState(false);
+  const { addToCart } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(item);
+    toast.success(`${item.name} ajouté au panier !`);
+  };
   
   const getTagColor = (tag: string) => {
     const colors: Record<string, string> = {
@@ -89,23 +98,33 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           )}
         </div>
       </div>
-      
-      {isAdmin && (
-        <div className="flex justify-end space-x-2 mt-auto">
+
+      <div className="flex justify-end space-x-2 mt-auto">
+        {isAdmin ? (
+          <>
+            <button
+              onClick={onEdit}
+              className="text-sm px-4 py-1.5 border-2 border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-sm px-4 py-1.5 border-2 border-accent text-accent rounded-lg hover:bg-accent/5 transition-colors"
+            >
+              Delete
+            </button>
+          </>
+        ) : (
           <button
-            onClick={onEdit}
-            className="text-sm px-4 py-1.5 border-2 border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
+            onClick={handleAddToCart}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all shadow-md hover:shadow-lg"
           >
-            Edit
+            <Plus size={18} />
+            <span className="font-semibold">Ajouter</span>
           </button>
-          <button
-            onClick={onDelete}
-            className="text-sm px-4 py-1.5 border-2 border-accent text-accent rounded-lg hover:bg-accent/5 transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

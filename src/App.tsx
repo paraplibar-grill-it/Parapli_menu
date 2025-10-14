@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MenuProvider } from './context/MenuContext';
+import { CartProvider } from './context/CartContext';
 import Header from './components/Header';
 import NewsBar from './components/NewsBar';
 import HomePage from './pages/HomePage';
@@ -15,6 +16,7 @@ function App() {
     <Router>
       <AuthProvider>
         <MenuProvider>
+          <CartProvider>
           <div className="min-h-screen flex flex-col bg-[#FFF9F2]">
             <Header />
             <NewsBar />
@@ -77,6 +79,7 @@ function App() {
               </div>
             </footer>
           </div>
+          </CartProvider>
         </MenuProvider>
       </AuthProvider>
     </Router>
