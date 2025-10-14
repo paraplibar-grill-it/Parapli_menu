@@ -138,7 +138,7 @@ export async function deleteOrder(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function subscribeToOrders(callback: () => void) {
+export function subscribeToOrders(callback: () => void) {
   const channel = supabase
     .channel('orders-changes')
     .on(
