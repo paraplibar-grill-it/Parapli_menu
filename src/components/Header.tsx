@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { signOut } from '../services/authService';
-import { Menu, LogOut, Umbrella } from 'lucide-react';
+import { Menu, LogOut, Umbrella, ShoppingBag } from 'lucide-react';
 import Button from './ui/Button';
 
 const Header: React.FC = () => {
@@ -55,22 +55,31 @@ const Header: React.FC = () => {
                   </div>
                   
                   {isAdminPage ? (
-                    <Link 
-                      to="/" 
+                    <Link
+                      to="/"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary/5 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       View Menu
                     </Link>
                   ) : (
-                    <Link 
-                      to="/admin" 
+                    <Link
+                      to="/admin"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary/5 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Admin Dashboard
                     </Link>
                   )}
+
+                  <Link
+                    to="/admin/orders"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary/5 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ShoppingBag size={16} className="inline mr-1" />
+                    Commandes
+                  </Link>
                   
                   <button
                     onClick={handleSignOut}

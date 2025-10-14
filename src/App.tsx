@@ -7,6 +7,7 @@ import NewsBar from './components/NewsBar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
+import OrdersPage from './pages/OrdersPage';
 import { Clock, CreditCard, Wallet, Smartphone, Landmark } from 'lucide-react';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/orders" element={<OrdersPage />} />
               </Routes>
             </main>
             <footer className="py-8 bg-gray-900 text-white">

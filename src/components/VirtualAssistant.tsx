@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Globe } from 'lucide-react';
+import { MessageCircle, X, Send, Globe, ShoppingCart } from 'lucide-react';
 import { useMenu } from '../context/MenuContext';
 import {
   createConversation,
@@ -7,7 +7,9 @@ import {
   getConversationMessages,
   type Language
 } from '../services/assistantService';
+import { createOrder } from '../services/orderService';
 import type { MenuItem } from '../types';
+import { toast } from 'react-hot-toast';
 
 interface Message {
   id: string;
@@ -24,6 +26,10 @@ const VirtualAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [language, setLanguage] = useState<Language>('fr');
+  const [tableNumber, setTableNumber] = useState<number | null>(null);
+  const [showTablePrompt, setShowTablePrompt] = useState(true);
+  const [cart, setCart] = useState<{item: MenuItem; quantity: number}[]>([]);
+  const [showCart, setShowCart] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { menuItems, categories } = useMenu();
 
@@ -135,6 +141,85 @@ const VirtualAssistant: React.FC = () => {
     }
   };
 
+  const handleTableNumberSubmit = () => {
+    if (tableNumber && tableNumber > 0) {
+      setShowTablePrompt(false);
+      initConversation();
+    }
+  };
+
+  const addToCart = (item: MenuItem) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem.item.id === item.id);
+      if (existingItem) {
+        return prevCart.map(cartItem =>
+          cartItem.item.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      }
+      return [...prevCart, { item, quantity: 1 }];
+    });
+
+    const messages = {
+      fr: `${item.name} ajouté au panier !`,
+      en: `${item.name} added to cart!`,
+      ht: `${item.name} ajoute nan panye!`
+    };
+    toast.success(messages[language]);
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCart(prevCart => prevCart.filter(cartItem => cartItem.item.id !== itemId));
+  };
+
+  const updateCartQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    setCart(prevCart =>
+      prevCart.map(cartItem =>
+        cartItem.item.id === itemId ? { ...cartItem, quantity } : cartItem
+      )
+    );
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!tableNumber || cart.length === 0) return;
+
+    try {
+      const orderItems = cart.map(({ item, quantity }) => ({
+        menuItemId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity
+      }));
+
+      await createOrder(tableNumber, orderItems);
+
+      const successMessages = {
+        fr: `Commande passée avec succès ! Nous préparons votre commande pour la table ${tableNumber}.`,
+        en: `Order placed successfully! We're preparing your order for table ${tableNumber}.`,
+        ht: `Kòmand pase avèk siksè! Nou ap prepare kòmand ou pou tab ${tableNumber}.`
+      };
+
+      toast.success(successMessages[language]);
+      setCart([]);
+      setShowCart(false);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      const errorMessages = {
+        fr: 'Erreur lors de la commande. Veuillez réessayer.',
+        en: 'Error placing order. Please try again.',
+        ht: 'Erè nan kòmand lan. Tanpri eseye ankò.'
+      };
+      toast.error(errorMessages[language]);
+    }
+  };
+
+  const cartTotal = cart.reduce((sum, { item, quantity }) => sum + (item.price * quantity), 0);
+
   return (
     <>
       <button
@@ -143,19 +228,74 @@ const VirtualAssistant: React.FC = () => {
         aria-label="Open virtual assistant"
       >
         <MessageCircle size={28} />
+        {cart.length > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+            {cart.length}
+          </span>
+        )}
       </button>
 
-      {isOpen && (
+      {isOpen && showTablePrompt && (
+        <div className="fixed bottom-6 right-6 w-96 bg-white rounded-2xl shadow-2xl p-6 z-50 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            {language === 'fr' ? 'Bienvenue !' : language === 'en' ? 'Welcome!' : 'Byenveni!'}
+          </h3>
+          <p className="text-gray-600 mb-4">
+            {language === 'fr'
+              ? 'Veuillez entrer votre numéro de table pour commencer'
+              : language === 'en'
+              ? 'Please enter your table number to start'
+              : 'Tanpri antre nimewo tab ou pou kòmanse'}
+          </p>
+          <input
+            type="number"
+            min="1"
+            value={tableNumber || ''}
+            onChange={(e) => setTableNumber(Number(e.target.value))}
+            placeholder={language === 'fr' ? 'Numéro de table' : language === 'en' ? 'Table number' : 'Nimewo tab'}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              {language === 'fr' ? 'Annuler' : language === 'en' ? 'Cancel' : 'Anile'}
+            </button>
+            <button
+              onClick={handleTableNumberSubmit}
+              disabled={!tableNumber || tableNumber <= 0}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {language === 'fr' ? 'Continuer' : language === 'en' ? 'Continue' : 'Kontinye'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isOpen && !showTablePrompt && !showCart && (
         <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MessageCircle size={24} />
               <div>
                 <h3 className="font-bold text-lg">Assistant Parapli Bar</h3>
-                <p className="text-xs text-blue-100">En ligne</p>
+                <p className="text-xs text-blue-100">Table {tableNumber}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCart(true)}
+                className="relative p-2 hover:bg-blue-500 rounded-lg transition-colors"
+                aria-label="View cart"
+              >
+                <ShoppingCart size={20} />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
               <div className="relative group">
                 <button
                   className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
@@ -208,7 +348,7 @@ const VirtualAssistant: React.FC = () => {
                       {message.suggestions.map((item) => (
                         <div
                           key={item.id}
-                          className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer"
+                          className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1 min-w-0">
@@ -219,9 +359,17 @@ const VirtualAssistant: React.FC = () => {
                                 {item.description}
                               </p>
                             </div>
-                            <span className="text-sm font-bold text-blue-600 whitespace-nowrap">
-                              {item.price} HTG
-                            </span>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-sm font-bold text-blue-600 whitespace-nowrap">
+                                {item.price} HTG
+                              </span>
+                              <button
+                                onClick={() => addToCart(item)}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -264,6 +412,103 @@ const VirtualAssistant: React.FC = () => {
                 <Send size={20} />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isOpen && !showTablePrompt && showCart && (
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShoppingCart size={24} />
+              <div>
+                <h3 className="font-bold text-lg">
+                  {language === 'fr' ? 'Votre Panier' : language === 'en' ? 'Your Cart' : 'Panye Ou'}
+                </h3>
+                <p className="text-xs text-blue-100">Table {tableNumber}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCart(false)}
+              className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
+              aria-label="Close cart"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            {cart.length === 0 ? (
+              <div className="text-center text-gray-500 mt-8">
+                <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
+                <p>
+                  {language === 'fr'
+                    ? 'Votre panier est vide'
+                    : language === 'en'
+                    ? 'Your cart is empty'
+                    : 'Panye ou vid'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cart.map(({ item, quantity }) => (
+                  <div key={item.id} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{item.name}</p>
+                        <p className="text-sm text-gray-600">{item.price} HTG</p>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateCartQuantity(item.id, quantity - 1)}
+                          className="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center font-semibold">{quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.id, quantity + 1)}
+                          className="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="font-bold text-blue-600">
+                        {(item.price * quantity).toFixed(0)} HTG
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-bold text-gray-900">
+                {language === 'fr' ? 'Total' : language === 'en' ? 'Total' : 'Total'}:
+              </span>
+              <span className="text-2xl font-bold text-blue-600">{cartTotal} HTG</span>
+            </div>
+            <button
+              onClick={handlePlaceOrder}
+              disabled={cart.length === 0}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
+            >
+              {language === 'fr'
+                ? 'Passer la commande'
+                : language === 'en'
+                ? 'Place Order'
+                : 'Pase Kòmand'}
+            </button>
           </div>
         </div>
       )}
