@@ -1,150 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Globe, ShoppingCart } from 'lucide-react';
+import { MessageCircle, X, Send, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { useMenu } from '../context/MenuContext';
-import {
-  createConversation,
-  processUserMessage,
-  getConversationMessages,
-  type Language
-} from '../services/assistantService';
 import { createOrder } from '../services/orderService';
-import type { MenuItem } from '../types';
+import type { MenuItem, Category } from '../types';
 import { toast } from 'react-hot-toast';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  suggestions?: MenuItem[];
-  created_at: string;
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
+}
+
+interface MenuView {
+  type: 'categories' | 'items';
+  categoryId?: string;
 }
 
 const VirtualAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<Language>('fr');
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [showTablePrompt, setShowTablePrompt] = useState(true);
-  const [cart, setCart] = useState<{item: MenuItem; quantity: number}[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [currentView, setCurrentView] = useState<MenuView>({ type: 'categories' });
+  const [searchQuery, setSearchQuery] = useState('');
   const { menuItems, categories } = useMenu();
 
-  const languageNames = {
-    fr: 'Français',
-    en: 'English',
-    ht: 'Kreyòl'
-  };
 
-  const placeholders = {
-    fr: 'Posez votre question...',
-    en: 'Ask your question...',
-    ht: 'Poze kesyon w...'
-  };
+  const filteredItems = menuItems.filter(item => {
+    const matchesSearch = searchQuery === '' ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-  useEffect(() => {
-    if (isOpen && !conversationId) {
-      initConversation();
-    }
-  }, [isOpen]);
+    const matchesCategory = currentView.type === 'categories' ||
+      item.category_id === currentView.categoryId;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    return matchesSearch && matchesCategory;
+  });
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const initConversation = async () => {
-    try {
-      setIsLoading(true);
-      const convId = await createConversation(language);
-      setConversationId(convId);
-
-      const msgs = await getConversationMessages(convId);
-      setMessages(msgs.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        created_at: msg.created_at
-      })));
-    } catch (error) {
-      console.error('Error initializing conversation:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLanguageChange = async (newLanguage: Language) => {
-    setLanguage(newLanguage);
-    setMessages([]);
-    setConversationId(null);
-
-    if (isOpen) {
-      try {
-        setIsLoading(true);
-        const convId = await createConversation(newLanguage);
-        setConversationId(convId);
-
-        const msgs = await getConversationMessages(convId);
-        setMessages(msgs.map(msg => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          created_at: msg.created_at
-        })));
-      } catch (error) {
-        console.error('Error changing language:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || !conversationId || isLoading) return;
-
-    const userMessage = inputValue.trim();
-    setInputValue('');
-    setIsLoading(true);
-
-    try {
-      const response = await processUserMessage(conversationId, userMessage, {
-        menuItems,
-        categories,
-        language
-      });
-
-      const updatedMessages = await getConversationMessages(conversationId);
-      setMessages(updatedMessages.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        suggestions: msg.role === 'assistant' && msg.metadata ? response.suggestions : undefined,
-        created_at: msg.created_at
-      })));
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const getCategoryById = (categoryId: string): Category | undefined => {
+    return categories.find(c => c.id === categoryId);
   };
 
   const handleTableNumberSubmit = () => {
     if (tableNumber && tableNumber > 0) {
       setShowTablePrompt(false);
-      initConversation();
+      setCurrentView({ type: 'categories' });
     }
   };
 
@@ -160,13 +59,7 @@ const VirtualAssistant: React.FC = () => {
       }
       return [...prevCart, { item, quantity: 1 }];
     });
-
-    const messages = {
-      fr: `${item.name} ajouté au panier !`,
-      en: `${item.name} added to cart!`,
-      ht: `${item.name} ajoute nan panye!`
-    };
-    toast.success(messages[language]);
+    toast.success(`${item.name} ajouté au panier !`);
   };
 
   const removeFromCart = (itemId: string) => {
@@ -197,24 +90,12 @@ const VirtualAssistant: React.FC = () => {
       }));
 
       await createOrder(tableNumber, orderItems);
-
-      const successMessages = {
-        fr: `Commande passée avec succès ! Nous préparons votre commande pour la table ${tableNumber}.`,
-        en: `Order placed successfully! We're preparing your order for table ${tableNumber}.`,
-        ht: `Kòmand pase avèk siksè! Nou ap prepare kòmand ou pou tab ${tableNumber}.`
-      };
-
-      toast.success(successMessages[language]);
+      toast.success(`Commande passée avec succès ! Nous préparons votre commande pour la table ${tableNumber}.`);
       setCart([]);
-      setShowCart(false);
+      setCurrentView({ type: 'categories' });
     } catch (error) {
       console.error('Error placing order:', error);
-      const errorMessages = {
-        fr: 'Erreur lors de la commande. Veuillez réessayer.',
-        en: 'Error placing order. Please try again.',
-        ht: 'Erè nan kòmand lan. Tanpri eseye ankò.'
-      };
-      toast.error(errorMessages[language]);
+      toast.error('Erreur lors de la commande. Veuillez réessayer.');
     }
   };
 
@@ -224,12 +105,12 @@ const VirtualAssistant: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
-        aria-label="Open virtual assistant"
+        className="fixed bottom-6 right-6 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+        aria-label="Commander"
       >
-        <MessageCircle size={28} />
+        <ShoppingCart size={28} />
         {cart.length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+          <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
             {cart.length}
           </span>
         )}
@@ -237,281 +118,171 @@ const VirtualAssistant: React.FC = () => {
 
       {isOpen && showTablePrompt && (
         <div className="fixed bottom-6 right-6 w-96 bg-white rounded-2xl shadow-2xl p-6 z-50 border border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
-            {language === 'fr' ? 'Bienvenue !' : language === 'en' ? 'Welcome!' : 'Byenveni!'}
-          </h3>
-          <p className="text-gray-600 mb-4">
-            {language === 'fr'
-              ? 'Veuillez entrer votre numéro de table pour commencer'
-              : language === 'en'
-              ? 'Please enter your table number to start'
-              : 'Tanpri antre nimewo tab ou pou kòmanse'}
-          </p>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">Bienvenue !</h3>
+          <p className="text-gray-600 mb-4">Veuillez entrer votre numéro de table pour commencer</p>
           <input
             type="number"
             min="1"
             value={tableNumber || ''}
             onChange={(e) => setTableNumber(Number(e.target.value))}
-            placeholder={language === 'fr' ? 'Numéro de table' : language === 'en' ? 'Table number' : 'Nimewo tab'}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            placeholder="Numéro de table"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 mb-4"
           />
           <div className="flex gap-2">
             <button
               onClick={() => setIsOpen(false)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
             >
-              {language === 'fr' ? 'Annuler' : language === 'en' ? 'Cancel' : 'Anile'}
+              Annuler
             </button>
             <button
               onClick={handleTableNumberSubmit}
               disabled={!tableNumber || tableNumber <= 0}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {language === 'fr' ? 'Continuer' : language === 'en' ? 'Continue' : 'Kontinye'}
+              Continuer
             </button>
           </div>
         </div>
       )}
 
-      {isOpen && !showTablePrompt && !showCart && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MessageCircle size={24} />
-              <div>
-                <h3 className="font-bold text-lg">Assistant Parapli Bar</h3>
-                <p className="text-xs text-blue-100">Table {tableNumber}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowCart(true)}
-                className="relative p-2 hover:bg-blue-500 rounded-lg transition-colors"
-                aria-label="View cart"
-              >
-                <ShoppingCart size={20} />
-                {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {cart.length}
-                  </span>
-                )}
-              </button>
-              <div className="relative group">
-                <button
-                  className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
-                  aria-label="Change language"
-                >
-                  <Globe size={20} />
-                </button>
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
-                  {(['fr', 'en', 'ht'] as Language[]).map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => handleLanguageChange(lang)}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                        language === lang
-                          ? 'bg-blue-50 text-blue-600 font-semibold'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {languageNames[lang]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
-                aria-label="Close assistant"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
-                  }`}
-                >
-                  <p className="whitespace-pre-line text-sm leading-relaxed">{message.content}</p>
-                  {message.suggestions && message.suggestions.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                      {message.suggestions.map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex justify-between items-start gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm text-gray-900 truncate">
-                                {item.name}
-                              </p>
-                              <p className="text-xs text-gray-600 line-clamp-2 mt-1">
-                                {item.description}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-sm font-bold text-blue-600 whitespace-nowrap">
-                                {item.price} HTG
-                              </span>
-                              <button
-                                onClick={() => addToCart(item)}
-                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white rounded-2xl rounded-bl-none px-4 py-3 shadow-sm border border-gray-100">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-4 bg-white border-t border-gray-200">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={placeholders[language]}
-                disabled={isLoading}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                aria-label="Send message"
-              >
-                <Send size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isOpen && !showTablePrompt && showCart && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
+      {isOpen && !showTablePrompt && (
+        <div className="fixed bottom-6 right-6 w-[450px] h-[700px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ShoppingCart size={24} />
               <div>
-                <h3 className="font-bold text-lg">
-                  {language === 'fr' ? 'Votre Panier' : language === 'en' ? 'Your Cart' : 'Panye Ou'}
-                </h3>
-                <p className="text-xs text-blue-100">Table {tableNumber}</p>
+                <h3 className="font-bold text-lg">Commander</h3>
+                <p className="text-xs text-orange-100">Table {tableNumber}</p>
               </div>
             </div>
             <button
-              onClick={() => setShowCart(false)}
-              className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
-              aria-label="Close cart"
+              onClick={() => setIsOpen(false)}
+              className="p-2 hover:bg-orange-500 rounded-lg transition-colors"
+              aria-label="Fermer"
             >
               <X size={20} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {cart.length === 0 ? (
-              <div className="text-center text-gray-500 mt-8">
-                <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
-                <p>
-                  {language === 'fr'
-                    ? 'Votre panier est vide'
-                    : language === 'en'
-                    ? 'Your cart is empty'
-                    : 'Panye ou vid'}
-                </p>
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher un article..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          {currentView.type === 'categories' && (
+            <div className="flex-1 overflow-y-auto p-4">
+              <h4 className="text-lg font-bold text-gray-800 mb-4">Choisissez une catégorie</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map(category => (
+                  <button
+                    key={category.id}
+                    onClick={() => setCurrentView({ type: 'items', categoryId: category.id })}
+                    className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl p-4 hover:shadow-lg hover:border-orange-400 transition-all text-left"
+                  >
+                    <h5 className="font-bold text-gray-800 text-lg">{category.name}</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {menuItems.filter(item => item.category_id === category.id).length} articles
+                    </p>
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {cart.map(({ item, quantity }) => (
-                  <div key={item.id} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.price} HTG</p>
+            </div>
+          )}
+
+          {currentView.type === 'items' && (
+            <>
+              <div className="p-4 border-b border-gray-200 bg-orange-50">
+                <button
+                  onClick={() => setCurrentView({ type: 'categories' })}
+                  className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center gap-1"
+                >
+                  ← Retour aux catégories
+                </button>
+                <h4 className="text-lg font-bold text-gray-800 mt-2">
+                  {getCategoryById(currentView.categoryId!)?.name}
+                </h4>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {filteredItems.length === 0 ? (
+                  <p className="text-center text-gray-500 mt-8">Aucun article trouvé</p>
+                ) : (
+                  filteredItems.map(item => (
+                    <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1">
+                          <h5 className="font-bold text-gray-800">{item.name}</h5>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                          <p className="text-lg font-bold text-orange-600 mt-2">{item.price} HTG</p>
+                        </div>
+                        <button
+                          onClick={() => addToCart(item)}
+                          className="bg-orange-600 text-white p-2 rounded-lg hover:bg-orange-700 transition-colors"
+                        >
+                          <Plus size={20} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        <X size={16} />
-                      </button>
                     </div>
-                    <div className="flex items-center justify-between">
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {cart.length > 0 && (
+            <div className="border-t border-gray-200 bg-gray-50 p-4">
+              <div className="mb-3">
+                <h5 className="font-bold text-gray-800 mb-2">Panier ({cart.length})</h5>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {cart.map(({ item, quantity }) => (
+                    <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-2 text-sm">
+                      <span className="flex-1 truncate">{item.name}</span>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateCartQuantity(item.id, quantity - 1)}
-                          className="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center"
+                          className="w-6 h-6 bg-gray-200 rounded hover:bg-gray-300 flex items-center justify-center"
                         >
-                          -
+                          <Minus size={14} />
                         </button>
-                        <span className="w-8 text-center font-semibold">{quantity}</span>
+                        <span className="w-6 text-center font-semibold">{quantity}</span>
                         <button
                           onClick={() => updateCartQuantity(item.id, quantity + 1)}
-                          className="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center"
+                          className="w-6 h-6 bg-gray-200 rounded hover:bg-gray-300 flex items-center justify-center"
                         >
-                          +
+                          <Plus size={14} />
+                        </button>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-600 hover:text-red-700 ml-1"
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </div>
-                      <span className="font-bold text-blue-600">
-                        {(item.price * quantity).toFixed(0)} HTG
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="p-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-lg font-bold text-gray-900">
-                {language === 'fr' ? 'Total' : language === 'en' ? 'Total' : 'Total'}:
-              </span>
-              <span className="text-2xl font-bold text-blue-600">{cartTotal} HTG</span>
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-bold text-gray-800">Total:</span>
+                <span className="text-xl font-bold text-orange-600">{cartTotal} HTG</span>
+              </div>
+              <button
+                onClick={handlePlaceOrder}
+                className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-xl hover:from-orange-700 hover:to-red-700 transition-all font-bold"
+              >
+                Passer la commande
+              </button>
             </div>
-            <button
-              onClick={handlePlaceOrder}
-              disabled={cart.length === 0}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
-            >
-              {language === 'fr'
-                ? 'Passer la commande'
-                : language === 'en'
-                ? 'Place Order'
-                : 'Pase Kòmand'}
-            </button>
-          </div>
+          )}
         </div>
       )}
+
     </>
   );
 };
