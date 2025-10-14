@@ -22,6 +22,7 @@ const VirtualAssistant: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentView, setCurrentView] = useState<MenuView>({ type: 'categories' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const { menuItems, categories } = useMenu();
 
 
@@ -90,9 +91,12 @@ const VirtualAssistant: React.FC = () => {
       }));
 
       await createOrder(tableNumber, orderItems);
-      toast.success(`Commande passée avec succès ! Nous préparons votre commande pour la table ${tableNumber}.`);
       setCart([]);
-      setCurrentView({ type: 'categories' });
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        setCurrentView({ type: 'categories' });
+      }, 3000);
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Erreur lors de la commande. Veuillez réessayer.');
@@ -146,7 +150,7 @@ const VirtualAssistant: React.FC = () => {
         </div>
       )}
 
-      {isOpen && !showTablePrompt && (
+      {isOpen && !showTablePrompt && !showSuccessMessage && (
         <div className="fixed bottom-6 right-6 w-[450px] h-[700px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -280,6 +284,32 @@ const VirtualAssistant: React.FC = () => {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {isOpen && !showTablePrompt && showSuccessMessage && (
+        <div className="fixed bottom-6 right-6 w-[450px] bg-white rounded-2xl shadow-2xl p-8 z-50 border-2 border-green-500">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">Commande confirmée !</h3>
+            <p className="text-gray-600 text-lg mb-2">
+              Votre commande pour la table {tableNumber} a été envoyée à la cuisine.
+            </p>
+            <p className="text-gray-500 text-sm">
+              Nous préparons votre commande avec soin.
+            </p>
+            <div className="mt-6">
+              <div className="animate-pulse flex justify-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animation-delay-200"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animation-delay-400"></div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

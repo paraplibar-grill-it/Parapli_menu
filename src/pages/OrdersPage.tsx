@@ -8,6 +8,8 @@ const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [searchTable, setSearchTable] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'date' | 'table' | 'amount'>('date');
 
   useEffect(() => {
     fetchOrders();
@@ -57,9 +59,28 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  const filteredOrders = filter === 'all'
+  let filteredOrders = filter === 'all'
     ? orders
     : orders.filter(order => order.status === filter);
+
+  if (searchTable) {
+    filteredOrders = filteredOrders.filter(order =>
+      order.table_number.toString().includes(searchTable) ||
+      order.customer_name?.toLowerCase().includes(searchTable.toLowerCase())
+    );
+  }
+
+  filteredOrders = [...filteredOrders].sort((a, b) => {
+    switch (sortBy) {
+      case 'table':
+        return a.table_number - b.table_number;
+      case 'amount':
+        return b.total_amount - a.total_amount;
+      case 'date':
+      default:
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -159,7 +180,26 @@ const OrdersPage: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Rechercher par table ou nom..."
+              value={searchTable}
+              onChange={(e) => setSearchTable(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-[200px]"
+            />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'date' | 'table' | 'amount')}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="date">Trier par date</option>
+              <option value="table">Trier par table</option>
+              <option value="amount">Trier par montant</option>
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg transition-colors ${
@@ -210,6 +250,7 @@ const OrdersPage: React.FC = () => {
           >
             Livrés ({ordersByStatus.delivered})
           </button>
+          </div>
         </div>
       </div>
 
