@@ -42,6 +42,7 @@ export interface Order {
   status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   total_amount: number;
   notes: string;
+  is_read: boolean;
   created_at: string;
   updated_at: string;
 }

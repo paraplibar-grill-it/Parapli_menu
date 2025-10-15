@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, XCircle, Trash2, ChefHat, Bell } from 'lucide-react';
-import { getOrders, updateOrderStatus, deleteOrder, subscribeToOrders } from '../services/orderService';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, CheckCircle, XCircle, Trash2, ChefHat, Bell, BellOff, Volume2, VolumeX } from 'lucide-react';
+import { getOrders, updateOrderStatus, deleteOrder, subscribeToOrders, markOrderAsRead } from '../services/orderService';
 import type { OrderWithItems } from '../types';
 import { toast } from 'react-hot-toast';
+import { playNotificationSound, stopNotificationSound, isNotificationPlaying } from '../utils/notificationSound';
 
 const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -10,6 +11,8 @@ const OrdersPage: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [searchTable, setSearchTable] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'table' | 'amount'>('date');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const previousOrdersRef = useRef<string[]>([]);
 
   useEffect(() => {
     fetchOrders();
@@ -20,8 +23,34 @@ const OrdersPage: React.FC = () => {
 
     return () => {
       unsubscribe();
+      stopNotificationSound();
     };
   }, []);
+
+  useEffect(() => {
+    const unreadOrders = orders.filter(order => !order.is_read);
+    const currentOrderIds = orders.map(o => o.id);
+    const previousOrderIds = previousOrdersRef.current;
+
+    const newOrderIds = currentOrderIds.filter(id => !previousOrderIds.includes(id));
+
+    if (newOrderIds.length > 0 && soundEnabled && previousOrderIds.length > 0) {
+      const hasNewUnreadOrders = orders.some(order => newOrderIds.includes(order.id) && !order.is_read);
+      if (hasNewUnreadOrders) {
+        playNotificationSound();
+        toast.success('Nouvelle commande reçue !', {
+          icon: '🔔',
+          duration: 5000,
+        });
+      }
+    }
+
+    if (unreadOrders.length === 0 && isNotificationPlaying()) {
+      stopNotificationSound();
+    }
+
+    previousOrdersRef.current = currentOrderIds;
+  }, [orders, soundEnabled]);
 
   const fetchOrders = async () => {
     try {
@@ -38,12 +67,33 @@ const OrdersPage: React.FC = () => {
   const handleStatusUpdate = async (orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled') => {
     try {
       await updateOrderStatus(orderId, status);
+      await markOrderAsRead(orderId);
       toast.success('Statut mis à jour');
       fetchOrders();
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Erreur lors de la mise à jour');
     }
+  };
+
+  const handleMarkAsRead = async (orderId: string) => {
+    try {
+      await markOrderAsRead(orderId);
+      fetchOrders();
+      const unreadOrders = orders.filter(order => !order.is_read && order.id !== orderId);
+      if (unreadOrders.length === 0) {
+        stopNotificationSound();
+      }
+    } catch (error) {
+      console.error('Error marking order as read:', error);
+    }
+  };
+
+  const toggleSound = () => {
+    if (soundEnabled) {
+      stopNotificationSound();
+    }
+    setSoundEnabled(!soundEnabled);
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -130,11 +180,34 @@ const OrdersPage: React.FC = () => {
     );
   }
 
+  const unreadCount = orders.filter(o => !o.is_read).length;
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Gestion des Commandes</h1>
-        <p className="text-gray-600">Gérez toutes les commandes clients en temps réel</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Gestion des Commandes</h1>
+          <p className="text-gray-600">Gérez toutes les commandes clients en temps réel</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {unreadCount > 0 && (
+            <div className="bg-red-100 border-2 border-red-500 rounded-lg px-4 py-2 flex items-center gap-2 animate-pulse">
+              <Bell className="text-red-600" size={20} />
+              <span className="font-bold text-red-600">{unreadCount} nouvelle{unreadCount > 1 ? 's' : ''} commande{unreadCount > 1 ? 's' : ''}</span>
+            </div>
+          )}
+          <button
+            onClick={toggleSound}
+            className={`p-3 rounded-lg transition-all ${
+              soundEnabled
+                ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title={soundEnabled ? 'Désactiver les alertes sonores' : 'Activer les alertes sonores'}
+          >
+            {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -261,7 +334,13 @@ const OrdersPage: React.FC = () => {
           </div>
         ) : (
           filteredOrders.map(order => (
-            <div key={order.id} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div key={order.id} className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow relative ${!order.is_read ? 'border-4 border-red-400' : ''}`}>
+              {!order.is_read && (
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-bounce flex items-center gap-1">
+                  <Bell size={14} />
+                  NOUVEAU
+                </div>
+              )}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-4">
                   <div className="bg-blue-100 text-blue-800 font-bold text-xl rounded-lg px-4 py-2">
@@ -277,6 +356,15 @@ const OrdersPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!order.is_read && (
+                    <button
+                      onClick={() => handleMarkAsRead(order.id)}
+                      className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-1"
+                    >
+                      <CheckCircle size={16} />
+                      Marquer comme lu
+                    </button>
+                  )}
                   <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(order.status)}`}>
                     {getStatusIcon(order.status)}
                     {getStatusLabel(order.status)}

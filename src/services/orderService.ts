@@ -129,6 +129,15 @@ export async function updateOrderStatus(
   if (error) throw error;
 }
 
+export async function markOrderAsRead(orderId: string): Promise<void> {
+  const { error } = await supabase
+    .from('orders')
+    .update({ is_read: true })
+    .eq('id', orderId);
+
+  if (error) throw error;
+}
+
 export async function deleteOrder(orderId: string): Promise<void> {
   const { error } = await supabase
     .from('orders')
