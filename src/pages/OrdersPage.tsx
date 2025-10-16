@@ -412,37 +412,57 @@ const OrdersPage: React.FC = () => {
                   Total: {order.total_amount} HTG
                 </div>
                 <div className="flex gap-2">
-                  {order.status === 'pending' && (
-                    <button
-                      onClick={() => handleStatusUpdate(order.id, 'preparing')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Commencer la préparation
-                    </button>
+                  {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const nextStatus =
+                            order.status === 'pending' ? 'preparing' :
+                            order.status === 'preparing' ? 'ready' :
+                            'delivered';
+                          handleStatusUpdate(order.id, nextStatus);
+                        }}
+                        className="px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-md font-semibold flex items-center gap-2"
+                      >
+                        {order.status === 'pending' && (
+                          <>
+                            <ChefHat size={18} />
+                            Commencer
+                          </>
+                        )}
+                        {order.status === 'preparing' && (
+                          <>
+                            <Bell size={18} />
+                            Prêt
+                          </>
+                        )}
+                        {order.status === 'ready' && (
+                          <>
+                            <CheckCircle size={18} />
+                            Livré
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                      >
+                        <XCircle size={18} />
+                        Annuler
+                      </button>
+                    </>
                   )}
-                  {order.status === 'preparing' && (
-                    <button
-                      onClick={() => handleStatusUpdate(order.id, 'ready')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Marquer comme prêt
-                    </button>
+                  {order.status === 'delivered' && (
+                    <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold flex items-center gap-2">
+                      <CheckCircle size={18} />
+                      Commande livrée
+                    </div>
                   )}
-                  {order.status === 'ready' && (
-                    <button
-                      onClick={() => handleStatusUpdate(order.id, 'delivered')}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      Marquer comme livré
-                    </button>
-                  )}
-                  {(order.status === 'pending' || order.status === 'preparing') && (
-                    <button
-                      onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Annuler
-                    </button>
+                  {order.status === 'cancelled' && (
+                    <div className="px-4 py-2 bg-red-100 text-red-800 rounded-lg font-semibold flex items-center gap-2">
+                      <XCircle size={18} />
+                      Commande annulée
+                    </div>
                   )}
                 </div>
               </div>
