@@ -3,7 +3,7 @@ import { Clock, CheckCircle, XCircle, Trash2, ChefHat, Bell, BellOff, Volume2, V
 import { getOrders, updateOrderStatus, deleteOrder, subscribeToOrders, markOrderAsRead } from '../services/orderService';
 import type { OrderWithItems } from '../types';
 import { toast } from 'react-hot-toast';
-import { playNotificationSound, stopNotificationSound, isNotificationPlaying } from '../utils/notificationSound';
+import { playNotificationSound, stopNotificationSound, isNotificationPlaying, initAudioContext } from '../utils/notificationSound';
 
 const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -17,7 +17,11 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     fetchOrders();
 
+    // Initialize audio context on first user interaction
+    initAudioContext().catch(console.error);
+
     const unsubscribe = subscribeToOrders(() => {
+      console.log('Order change detected, fetching orders...');
       fetchOrders();
     });
 
@@ -66,34 +70,94 @@ const OrdersPage: React.FC = () => {
 
   const handleStatusUpdate = async (orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled') => {
     try {
+      // Optimistic update
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, status, is_read: true }
+            : order
+        )
+      );
+
       await updateOrderStatus(orderId, status);
       await markOrderAsRead(orderId);
+
       toast.success('Statut mis à jour');
-      fetchOrders();
+
+      // Fetch fresh data from server
+      await fetchOrders();
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Erreur lors de la mise à jour');
+      // Revert on error
+      await fetchOrders();
     }
   };
 
   const handleMarkAsRead = async (orderId: string) => {
     try {
+      // Optimistic update
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, is_read: true }
+            : order
+        )
+      );
+
       await markOrderAsRead(orderId);
-      fetchOrders();
-      const unreadOrders = orders.filter(order => !order.is_read && order.id !== orderId);
-      if (unreadOrders.length === 0) {
+
+      // Check if there are any unread orders left
+      const updatedOrders = orders.map(order =>
+        order.id === orderId ? { ...order, is_read: true } : order
+      );
+      const remainingUnread = updatedOrders.filter(order => !order.is_read);
+
+      if (remainingUnread.length === 0) {
         stopNotificationSound();
       }
+
+      // Fetch fresh data from server
+      await fetchOrders();
     } catch (error) {
       console.error('Error marking order as read:', error);
+      toast.error('Erreur lors du marquage');
+      await fetchOrders();
     }
   };
 
-  const toggleSound = () => {
+  const toggleSound = async () => {
     if (soundEnabled) {
       stopNotificationSound();
+    } else {
+      // Test sound when enabling
+      await initAudioContext();
+      const unreadOrders = orders.filter(order => !order.is_read);
+      if (unreadOrders.length > 0) {
+        playNotificationSound();
+      }
     }
     setSoundEnabled(!soundEnabled);
+  };
+
+  const testSound = async () => {
+    try {
+      await initAudioContext();
+      stopNotificationSound();
+      await playNotificationSound();
+      toast.success('Test de son activé - Le son devrait jouer maintenant', {
+        duration: 3000,
+      });
+      setTimeout(() => {
+        stopNotificationSound();
+        toast.success('Test de son terminé', {
+          duration: 2000,
+        });
+      }, 5000);
+    } catch (error) {
+      console.error('Error testing sound:', error);
+      toast.error('Erreur lors du test du son');
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -189,13 +253,21 @@ const OrdersPage: React.FC = () => {
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Gestion des Commandes</h1>
           <p className="text-gray-600">Gérez toutes les commandes clients en temps réel</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {unreadCount > 0 && (
             <div className="bg-red-100 border-2 border-red-500 rounded-lg px-4 py-2 flex items-center gap-2 animate-pulse">
               <Bell className="text-red-600" size={20} />
               <span className="font-bold text-red-600">{unreadCount} nouvelle{unreadCount > 1 ? 's' : ''} commande{unreadCount > 1 ? 's' : ''}</span>
             </div>
           )}
+          <button
+            onClick={testSound}
+            className="px-4 py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-all font-medium flex items-center gap-2"
+            title="Tester le son"
+          >
+            <Bell size={18} />
+            Test son
+          </button>
           <button
             onClick={toggleSound}
             className={`p-3 rounded-lg transition-all ${

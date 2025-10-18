@@ -2,13 +2,14 @@ let audioContext: AudioContext | null = null;
 let isPlaying = false;
 let intervalId: number | null = null;
 
-export const initAudioContext = () => {
+export const initAudioContext = async () => {
   if (!audioContext) {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume();
+    await audioContext.resume();
   }
+  return audioContext;
 };
 
 const playBeep = () => {
@@ -34,38 +35,43 @@ const playBeep = () => {
   oscillator.stop(audioContext.currentTime + 0.3);
 };
 
-export const playNotificationSound = () => {
+export const playNotificationSound = async () => {
   if (isPlaying) return;
 
-  initAudioContext();
-  if (!audioContext) {
-    console.error('AudioContext not available');
-    return;
-  }
+  try {
+    await initAudioContext();
+    if (!audioContext) {
+      console.error('AudioContext not available');
+      return;
+    }
 
-  isPlaying = true;
+    console.log('Starting notification sound...');
+    isPlaying = true;
 
-  const playTripleBeep = () => {
-    if (!isPlaying) return;
-
-    playBeep();
-    setTimeout(() => {
+    const playTripleBeep = () => {
       if (!isPlaying) return;
+
       playBeep();
       setTimeout(() => {
         if (!isPlaying) return;
         playBeep();
+        setTimeout(() => {
+          if (!isPlaying) return;
+          playBeep();
+        }, 200);
       }, 200);
-    }, 200);
-  };
+    };
 
-  playTripleBeep();
+    playTripleBeep();
 
-  intervalId = window.setInterval(() => {
-    if (isPlaying) {
-      playTripleBeep();
-    }
-  }, 3000);
+    intervalId = window.setInterval(() => {
+      if (isPlaying) {
+        playTripleBeep();
+      }
+    }, 3000);
+  } catch (error) {
+    console.error('Error playing notification sound:', error);
+  }
 };
 
 export const stopNotificationSound = () => {
