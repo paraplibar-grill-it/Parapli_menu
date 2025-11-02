@@ -147,21 +147,53 @@ export async function deleteOrder(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
-export function subscribeToOrders(callback: () => void) {
-  const channel = supabase
+export function subscribeToOrders(callback: (event?: any) => void) {
+  console.log('Setting up real-time subscription to orders...');
+
+  const ordersChannel = supabase
     .channel('orders-changes')
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'orders'
       },
-      callback
+      (payload) => {
+        console.log('New order detected:', payload);
+        callback('INSERT');
+      }
     )
-    .subscribe();
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders'
+      },
+      (payload) => {
+        console.log('Order updated:', payload);
+        callback('UPDATE');
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'orders'
+      },
+      (payload) => {
+        console.log('Order deleted:', payload);
+        callback('DELETE');
+      }
+    )
+    .subscribe((status) => {
+      console.log('Subscription status:', status);
+    });
 
   return () => {
-    supabase.removeChannel(channel);
+    console.log('Unsubscribing from orders');
+    supabase.removeChannel(ordersChannel);
   };
 }

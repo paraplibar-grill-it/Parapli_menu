@@ -20,8 +20,19 @@ const OrdersPage: React.FC = () => {
     // Initialize audio context on first user interaction
     initAudioContext().catch(console.error);
 
-    const unsubscribe = subscribeToOrders(() => {
-      console.log('Order change detected, fetching orders...');
+    const unsubscribe = subscribeToOrders((event: string) => {
+      console.log('Order change detected:', event);
+
+      // Trigger sound and notification for new orders
+      if (event === 'INSERT' && soundEnabled) {
+        console.log('New order INSERT detected - playing sound');
+        playNotificationSound();
+        toast.success('Nouvelle commande reçue !', {
+          duration: 5000,
+        });
+      }
+
+      // Fetch updated orders
       fetchOrders();
     });
 
@@ -29,32 +40,16 @@ const OrdersPage: React.FC = () => {
       unsubscribe();
       stopNotificationSound();
     };
-  }, []);
+  }, [soundEnabled]);
 
   useEffect(() => {
     const unreadOrders = orders.filter(order => !order.is_read);
-    const currentOrderIds = orders.map(o => o.id);
-    const previousOrderIds = previousOrdersRef.current;
 
-    const newOrderIds = currentOrderIds.filter(id => !previousOrderIds.includes(id));
-
-    if (newOrderIds.length > 0 && soundEnabled && previousOrderIds.length > 0) {
-      const hasNewUnreadOrders = orders.some(order => newOrderIds.includes(order.id) && !order.is_read);
-      if (hasNewUnreadOrders) {
-        playNotificationSound();
-        toast.success('Nouvelle commande reçue !', {
-          icon: '🔔',
-          duration: 5000,
-        });
-      }
-    }
-
+    // Stop sound if all orders are read
     if (unreadOrders.length === 0 && isNotificationPlaying()) {
       stopNotificationSound();
     }
-
-    previousOrdersRef.current = currentOrderIds;
-  }, [orders, soundEnabled]);
+  }, [orders]);
 
   const fetchOrders = async () => {
     try {
