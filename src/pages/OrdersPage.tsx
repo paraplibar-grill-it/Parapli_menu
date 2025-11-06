@@ -24,23 +24,27 @@ const OrdersPage: React.FC = () => {
       console.log('Order change detected:', event);
 
       // Trigger sound and notification for new orders
-      if (event === 'INSERT' && soundEnabled) {
+      if (event === 'INSERT') {
         console.log('New order INSERT detected - playing sound');
-        playNotificationSound();
+        if (soundEnabled) {
+          playNotificationSound();
+        }
         toast.success('Nouvelle commande reçue !', {
           duration: 5000,
         });
       }
 
-      // Fetch updated orders
-      fetchOrders();
+      // Fetch updated orders only on INSERT/UPDATE
+      if (event === 'INSERT' || event === 'UPDATE' || event === 'DELETE') {
+        fetchOrders();
+      }
     });
 
     return () => {
       unsubscribe();
       stopNotificationSound();
     };
-  }, [soundEnabled]);
+  }, []);
 
   useEffect(() => {
     const unreadOrders = orders.filter(order => !order.is_read);
