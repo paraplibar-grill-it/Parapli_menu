@@ -37,13 +37,30 @@ const OrdersPage: React.FC = () => {
           console.log('Order change event:', event);
 
           if (event === 'INSERT') {
-            console.log('New order detected - playing sound');
+            console.log('New order detected, soundEnabled:', soundEnabledRef.current);
+
             if (soundEnabledRef.current) {
-              playNotificationSound().catch(err => console.error('Sound play error:', err));
+              console.log('Attempting to play sound...');
+              playNotificationSound()
+                .then(() => {
+                  console.log('Sound played successfully');
+                  toast.success('Nouvelle commande reçue !', {
+                    duration: 5000,
+                  });
+                })
+                .catch(err => {
+                  console.error('Sound play error:', err);
+                  toast.success('Nouvelle commande reçue !', {
+                    duration: 5000,
+                  });
+                });
+            } else {
+              console.log('Sound disabled, skipping sound');
+              toast.success('Nouvelle commande reçue !', {
+                duration: 5000,
+              });
             }
-            toast.success('Nouvelle commande reçue !', {
-              duration: 5000,
-            });
+
             fetchOrders();
           } else if (event === 'UPDATE' || event === 'DELETE') {
             fetchOrders();
@@ -154,34 +171,37 @@ const OrdersPage: React.FC = () => {
   const toggleSound = async () => {
     if (soundEnabled) {
       stopNotificationSound();
+      setSoundEnabled(false);
     } else {
-      // Test sound when enabling
+      setSoundEnabled(true);
       await initAudioContext();
-      const unreadOrders = orders.filter(order => !order.is_read);
-      if (unreadOrders.length > 0) {
-        playNotificationSound();
-      }
+      toast.success('Alertes sonores activées', { duration: 2000 });
     }
-    setSoundEnabled(!soundEnabled);
   };
 
   const testSound = async () => {
     try {
+      console.log('Starting sound test...');
       await initAudioContext();
+      console.log('AudioContext initialized');
+
       stopNotificationSound();
+      console.log('Previous sound stopped');
+
+      console.log('Playing test notification sound...');
       await playNotificationSound();
-      toast.success('Test de son activé - Le son devrait jouer maintenant', {
-        duration: 3000,
+
+      toast.success('Test de son - écoutez les bips', {
+        duration: 6000,
       });
+
       setTimeout(() => {
+        console.log('Stopping test sound');
         stopNotificationSound();
-        toast.success('Test de son terminé', {
-          duration: 2000,
-        });
       }, 5000);
     } catch (error) {
       console.error('Error testing sound:', error);
-      toast.error('Erreur lors du test du son');
+      toast.error('Erreur lors du test du son: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
