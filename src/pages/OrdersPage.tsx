@@ -12,36 +12,62 @@ const OrdersPage: React.FC = () => {
   const [searchTable, setSearchTable] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'table' | 'amount'>('date');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const previousOrdersRef = useRef<string[]>([]);
+  const soundEnabledRef = useRef(true);
 
   useEffect(() => {
-    fetchOrders();
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
-    // Initialize audio context on first user interaction
-    initAudioContext().catch(console.error);
+  useEffect(() => {
+    let mounted = true;
+    let pollInterval: NodeJS.Timeout | null = null;
 
-    const unsubscribe = subscribeToOrders((event: string) => {
-      console.log('Order change detected:', event);
+    const initializeOrders = async () => {
+      try {
+        await initAudioContext();
+        await fetchOrders();
 
-      // Trigger sound and notification for new orders
-      if (event === 'INSERT') {
-        console.log('New order INSERT detected - playing sound');
-        if (soundEnabled) {
-          playNotificationSound();
-        }
-        toast.success('Nouvelle commande reçue !', {
-          duration: 5000,
+        if (!mounted) return;
+
+        const unsubscribe = subscribeToOrders((event: string) => {
+          if (!mounted) return;
+
+          console.log('Order change event:', event);
+
+          if (event === 'INSERT') {
+            console.log('New order detected - playing sound');
+            if (soundEnabledRef.current) {
+              playNotificationSound().catch(err => console.error('Sound play error:', err));
+            }
+            toast.success('Nouvelle commande reçue !', {
+              duration: 5000,
+            });
+            fetchOrders();
+          } else if (event === 'UPDATE' || event === 'DELETE') {
+            fetchOrders();
+          }
         });
-      }
 
-      // Fetch updated orders only on INSERT/UPDATE
-      if (event === 'INSERT' || event === 'UPDATE' || event === 'DELETE') {
-        fetchOrders();
+        pollInterval = setInterval(() => {
+          if (mounted) {
+            fetchOrders();
+          }
+        }, 3000);
+
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error initializing orders:', error);
       }
-    });
+    };
+
+    const unsubPromise = initializeOrders();
 
     return () => {
-      unsubscribe();
+      mounted = false;
+      if (pollInterval) clearInterval(pollInterval);
+      unsubPromise?.then(unsub => unsub?.());
       stopNotificationSound();
     };
   }, []);

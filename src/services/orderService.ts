@@ -147,53 +147,48 @@ export async function deleteOrder(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
+let ordersChannel: any = null;
+
 export function subscribeToOrders(callback: (event?: any) => void) {
   console.log('Setting up real-time subscription to orders...');
 
-  const ordersChannel = supabase
-    .channel('orders-changes')
+  if (ordersChannel) {
+    console.log('Channel already exists, unsubscribing first');
+    supabase.removeChannel(ordersChannel);
+  }
+
+  ordersChannel = supabase.channel('orders-changes', {
+    config: {
+      broadcast: { self: true },
+      presence: { key: 'orders' }
+    }
+  });
+
+  ordersChannel
     .on(
       'postgres_changes',
       {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'orders'
       },
-      (payload) => {
-        console.log('New order detected:', payload);
-        callback('INSERT');
+      (payload: any) => {
+        console.log('Order change detected:', payload.eventType, payload);
+        callback(payload.eventType);
       }
     )
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders'
-      },
-      (payload) => {
-        console.log('Order updated:', payload);
-        callback('UPDATE');
+    .subscribe((status: string) => {
+      console.log('Orders subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to orders');
       }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'orders'
-      },
-      (payload) => {
-        console.log('Order deleted:', payload);
-        callback('DELETE');
-      }
-    )
-    .subscribe((status) => {
-      console.log('Subscription status:', status);
     });
 
   return () => {
     console.log('Unsubscribing from orders');
-    supabase.removeChannel(ordersChannel);
+    if (ordersChannel) {
+      supabase.removeChannel(ordersChannel);
+      ordersChannel = null;
+    }
   };
 }
