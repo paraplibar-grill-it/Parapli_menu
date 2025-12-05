@@ -102,7 +102,15 @@ export const reorderCategories = async (categoryIds: string[]): Promise<void> =>
   const { error } = await supabase.rpc('reorder_categories', {
     category_ids: categoryIds
   });
-  
+
+  if (error) throw error;
+};
+
+export const reorderMenuItems = async (itemIds: string[]): Promise<void> => {
+  const { error } = await supabase.rpc('reorder_menu_items', {
+    item_ids: itemIds
+  });
+
   if (error) throw error;
 };
 

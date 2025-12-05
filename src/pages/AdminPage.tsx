@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../context/MenuContext';
 import { createMenuItem, updateMenuItem, deleteMenuItem, createCategory, updateCategory, deleteCategory } from '../services/menuService';
-import { reorderCategories } from '../services/menuService';
+import { reorderCategories, reorderMenuItems } from '../services/menuService';
 import { createNewsEvent, updateNewsEvent, deleteNewsEvent, getNewsEvents } from '../services/newsService';
 import { useAuth } from '../context/AuthContext';
 import MenuGrid from '../components/MenuGrid';
+import MenuItemDragList from '../components/MenuItemDragList';
 import CategoryNavigation from '../components/CategoryNavigation';
 import SpecialOffersSection from '../components/SpecialOffersSection';
 import MenuItemForm from '../components/MenuItemForm';
@@ -15,7 +16,7 @@ import NewsEventForm from '../components/NewsEventForm';
 import MenuQRCode from '../components/MenuQRCode';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
-import { Plus, Bell } from 'lucide-react';
+import { Plus, Bell, ArrowUpDown } from 'lucide-react';
 import type { MenuItem, MenuItemInput, Category, CategoryInput, NewsEvent, NewsEventInput } from '../types';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -28,6 +29,7 @@ const AdminPage: React.FC = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isNewsEventModalOpen, setIsNewsEventModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isReorderingMenuItems, setIsReorderingMenuItems] = useState(false);
   const [deleteType, setDeleteType] = useState<'menuItem' | 'category' | 'newsEvent'>('menuItem');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -157,6 +159,19 @@ const AdminPage: React.FC = () => {
     } catch (error) {
       console.error('Error reordering categories:', error);
       toast.error('Failed to reorder categories');
+    }
+  };
+
+  const handleMenuItemReorder = async (newOrder: MenuItem[]) => {
+    try {
+      const itemIds = newOrder.map(item => item.id);
+      await reorderMenuItems(itemIds);
+      toast.success('Menu items reordered successfully');
+      await refreshMenu();
+      setIsReorderingMenuItems(false);
+    } catch (error) {
+      console.error('Error reordering menu items:', error);
+      toast.error('Failed to reorder menu items');
     }
   };
   
@@ -349,20 +364,45 @@ const AdminPage: React.FC = () => {
       <section className="mb-12">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Menu Items</h2>
-          <Button onClick={handleAddMenuItem}>
-            <Plus size={16} className="mr-1" />
-            Add Menu Item
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant={isReorderingMenuItems ? 'primary' : 'outline'}
+              onClick={() => setIsReorderingMenuItems(!isReorderingMenuItems)}
+            >
+              <ArrowUpDown size={16} className="mr-1" />
+              {isReorderingMenuItems ? 'Done Reordering' : 'Reorder Items'}
+            </Button>
+            <Button onClick={handleAddMenuItem}>
+              <Plus size={16} className="mr-1" />
+              Add Menu Item
+            </Button>
+          </div>
         </div>
-        
-        <CategoryNavigation />
-        
-        <div className="mb-8">
-          <MenuGrid
-            onEditItem={handleEditMenuItem}
-            onDeleteItem={handleDeleteMenuItem}
-          />
-        </div>
+
+        {isReorderingMenuItems ? (
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-8">
+            <p className="text-sm text-blue-700 mb-4">
+              Drag and drop menu items to reorder them. Click "Done Reordering" when finished.
+            </p>
+            <MenuItemDragList
+              items={menuItems}
+              onReorder={handleMenuItemReorder}
+              onEdit={handleEditMenuItem}
+              onDelete={handleDeleteMenuItem}
+            />
+          </div>
+        ) : (
+          <>
+            <CategoryNavigation />
+
+            <div className="mb-8">
+              <MenuGrid
+                onEditItem={handleEditMenuItem}
+                onDeleteItem={handleDeleteMenuItem}
+              />
+            </div>
+          </>
+        )}
       </section>
       
       {/* QR Code Section */}
