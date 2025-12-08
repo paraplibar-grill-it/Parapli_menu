@@ -6,8 +6,8 @@ export const getMenuItems = async (): Promise<MenuItem[]> => {
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
-    .order('created_at', { ascending: true });
-  
+    .order('order_index', { ascending: true });
+
   if (error) throw error;
   return data || [];
 };
@@ -17,8 +17,8 @@ export const getMenuItemsByCategory = async (categoryId: string): Promise<MenuIt
     .from('menu_items')
     .select('*')
     .eq('category_id', categoryId)
-    .order('created_at', { ascending: true });
-  
+    .order('order_index', { ascending: true });
+
   if (error) throw error;
   return data || [];
 };
