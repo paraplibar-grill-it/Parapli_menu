@@ -292,97 +292,97 @@ const OrdersPage: React.FC = () => {
   const unreadCount = orders.filter(o => !o.is_read).length;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex justify-between items-start">
+    <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Gestion des Commandes</h1>
-          <p className="text-gray-600">Gérez toutes les commandes clients en temps réel</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2">Gestion des Commandes</h1>
+          <p className="text-sm md:text-base text-gray-600">Gérez toutes les commandes clients en temps réel</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap md:flex-nowrap">
           {unreadCount > 0 && (
-            <div className="bg-red-100 border-2 border-red-500 rounded-lg px-4 py-2 flex items-center gap-2 animate-pulse">
-              <Bell className="text-red-600" size={20} />
-              <span className="font-bold text-red-600">{unreadCount} nouvelle{unreadCount > 1 ? 's' : ''} commande{unreadCount > 1 ? 's' : ''}</span>
+            <div className="bg-red-100 border-2 border-red-500 rounded-lg px-2 md:px-4 py-2 flex items-center gap-2 animate-pulse text-xs md:text-sm">
+              <Bell className="text-red-600 flex-shrink-0" size={16} />
+              <span className="font-bold text-red-600 whitespace-nowrap">{unreadCount} nouvelle{unreadCount > 1 ? 's' : ''}</span>
             </div>
           )}
           <button
             onClick={testSound}
-            className="px-4 py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-all font-medium flex items-center gap-2"
+            className="px-2 md:px-4 py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg transition-all font-medium flex items-center gap-1 md:gap-2 text-xs md:text-sm"
             title="Tester le son"
           >
-            <Bell size={18} />
-            Test son
+            <Bell size={16} />
+            <span className="hidden sm:inline">Test son</span>
           </button>
           <button
             onClick={toggleSound}
-            className={`p-3 rounded-lg transition-all ${
+            className={`p-2 md:p-3 rounded-lg transition-all ${
               soundEnabled
                 ? 'bg-green-100 text-green-600 hover:bg-green-200'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
             title={soundEnabled ? 'Désactiver les alertes sonores' : 'Activer les alertes sonores'}
           >
-            {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-yellow-600 font-medium">En attente</p>
-              <p className="text-3xl font-bold text-yellow-800">{ordersByStatus.pending}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg md:rounded-xl p-3 md:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-yellow-600 font-medium">En attente</p>
+              <p className="text-2xl md:text-3xl font-bold text-yellow-800">{ordersByStatus.pending}</p>
             </div>
-            <Clock size={32} className="text-yellow-600" />
+            <Clock size={24} className="text-yellow-600 flex-shrink-0 hidden md:block" />
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium">En préparation</p>
-              <p className="text-3xl font-bold text-blue-800">{ordersByStatus.preparing}</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg md:rounded-xl p-3 md:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-blue-600 font-medium">En préparation</p>
+              <p className="text-2xl md:text-3xl font-bold text-blue-800">{ordersByStatus.preparing}</p>
             </div>
-            <ChefHat size={32} className="text-blue-600" />
+            <ChefHat size={24} className="text-blue-600 flex-shrink-0 hidden md:block" />
           </div>
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-600 font-medium">Prêt</p>
-              <p className="text-3xl font-bold text-green-800">{ordersByStatus.ready}</p>
+        <div className="bg-green-50 border border-green-200 rounded-lg md:rounded-xl p-3 md:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-green-600 font-medium">Prêt</p>
+              <p className="text-2xl md:text-3xl font-bold text-green-800">{ordersByStatus.ready}</p>
             </div>
-            <Bell size={32} className="text-green-600" />
+            <Bell size={24} className="text-green-600 flex-shrink-0 hidden md:block" />
           </div>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Livrés</p>
-              <p className="text-3xl font-bold text-gray-800">{ordersByStatus.delivered}</p>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl p-3 md:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs md:text-sm text-gray-600 font-medium">Livrés</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-800">{ordersByStatus.delivered}</p>
             </div>
-            <CheckCircle size={32} className="text-gray-600" />
+            <CheckCircle size={24} className="text-gray-600 flex-shrink-0 hidden md:block" />
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg md:rounded-xl shadow-md p-4 md:p-6 mb-6">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
             <input
               type="text"
               placeholder="Rechercher par table ou nom..."
               value={searchTable}
               onChange={(e) => setSearchTable(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-[200px]"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'date' | 'table' | 'amount')}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               <option value="date">Trier par date</option>
               <option value="table">Trier par table</option>
@@ -390,56 +390,56 @@ const OrdersPage: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Toutes ({orders.length})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === 'pending'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            En attente ({ordersByStatus.pending})
-          </button>
-          <button
-            onClick={() => setFilter('preparing')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === 'preparing'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            En préparation ({ordersByStatus.preparing})
-          </button>
-          <button
-            onClick={() => setFilter('ready')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === 'ready'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Prêt ({ordersByStatus.ready})
-          </button>
-          <button
-            onClick={() => setFilter('delivered')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === 'delivered'
-                ? 'bg-gray-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Livrés ({ordersByStatus.delivered})
-          </button>
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-xs md:text-sm font-medium ${
+                filter === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Toutes ({orders.length})
+            </button>
+            <button
+              onClick={() => setFilter('pending')}
+              className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-xs md:text-sm font-medium ${
+                filter === 'pending'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              En attente ({ordersByStatus.pending})
+            </button>
+            <button
+              onClick={() => setFilter('preparing')}
+              className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-xs md:text-sm font-medium ${
+                filter === 'preparing'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              En préparation ({ordersByStatus.preparing})
+            </button>
+            <button
+              onClick={() => setFilter('ready')}
+              className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-xs md:text-sm font-medium ${
+                filter === 'ready'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Prêt ({ordersByStatus.ready})
+            </button>
+            <button
+              onClick={() => setFilter('delivered')}
+              className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-xs md:text-sm font-medium ${
+                filter === 'delivered'
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Livrés ({ordersByStatus.delivered})
+            </button>
           </div>
         </div>
       </div>
@@ -451,136 +451,142 @@ const OrdersPage: React.FC = () => {
           </div>
         ) : (
           filteredOrders.map(order => (
-            <div key={order.id} className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow relative ${!order.is_read ? 'border-4 border-red-400' : ''}`}>
+            <div key={order.id} className={`bg-white rounded-lg md:rounded-xl shadow-md hover:shadow-lg transition-shadow relative overflow-hidden ${!order.is_read ? 'border-4 border-red-400' : ''}`}>
               {!order.is_read && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-bounce flex items-center gap-1">
-                  <Bell size={14} />
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white px-2 md:px-3 py-1 rounded-full text-xs font-bold animate-bounce flex items-center gap-1 z-10">
+                  <Bell size={12} />
                   NOUVEAU
                 </div>
               )}
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-100 text-blue-800 font-bold text-xl rounded-lg px-4 py-2">
-                    Table {order.table_number}
+              <div className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 md:gap-4 mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className="bg-blue-100 text-blue-800 font-bold text-lg md:text-xl rounded-lg px-3 md:px-4 py-2 flex-shrink-0">
+                      T{order.table_number}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs md:text-sm text-gray-500 truncate">
+                        {new Date(order.created_at).toLocaleString('fr-FR')}
+                      </p>
+                      {order.customer_name && (
+                        <p className="text-xs md:text-sm text-gray-700 font-medium truncate">{order.customer_name}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      {new Date(order.created_at).toLocaleString('fr-FR')}
+                  <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+                    {!order.is_read && (
+                      <button
+                        onClick={() => handleMarkAsRead(order.id)}
+                        className="px-2 md:px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs md:text-sm font-medium flex items-center gap-1 whitespace-nowrap"
+                      >
+                        <CheckCircle size={14} />
+                        <span className="hidden sm:inline">Marquer comme lu</span>
+                        <span className="inline sm:hidden">Lire</span>
+                      </button>
+                    )}
+                    <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium border flex items-center gap-1 whitespace-nowrap ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)}
+                      <span className="hidden xs:inline">{getStatusLabel(order.status)}</span>
+                    </span>
+                    <button
+                      onClick={() => handleDeleteOrder(order.id)}
+                      className="p-1 md:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-sm md:text-base text-gray-800 mb-2">Articles:</h3>
+                  <div className="space-y-2">
+                    {order.items.map(item => (
+                      <div key={item.id} className="flex justify-between items-start bg-gray-50 rounded-lg p-2 md:p-3 gap-2">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                          <span className="bg-blue-100 text-blue-800 font-semibold px-2 py-1 rounded text-xs flex-shrink-0">
+                            x{item.quantity}
+                          </span>
+                          <span className="text-xs md:text-sm text-gray-800 line-clamp-2">{item.item_name}</span>
+                        </div>
+                        <span className="font-semibold text-xs md:text-sm text-gray-800 flex-shrink-0 whitespace-nowrap">
+                          {(item.price_at_order * item.quantity).toFixed(0)} HTG
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {order.notes && (
+                  <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-2 md:p-3">
+                    <p className="text-xs md:text-sm text-yellow-800">
+                      <span className="font-semibold">Note: </span>
+                      {order.notes}
                     </p>
-                    {order.customer_name && (
-                      <p className="text-sm text-gray-700 font-medium">{order.customer_name}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-gray-200">
+                  <div className="text-lg md:text-xl font-bold text-gray-800 order-2 sm:order-1">
+                    Total: {order.total_amount} HTG
+                  </div>
+                  <div className="flex gap-2 flex-wrap order-1 sm:order-2 justify-end">
+                    {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const nextStatus =
+                              order.status === 'pending' ? 'preparing' :
+                              order.status === 'preparing' ? 'ready' :
+                              'delivered';
+                            handleStatusUpdate(order.id, nextStatus);
+                          }}
+                          className="px-3 md:px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-md font-semibold flex items-center gap-1 md:gap-2 text-xs md:text-sm whitespace-nowrap"
+                        >
+                          {order.status === 'pending' && (
+                            <>
+                              <ChefHat size={16} />
+                              <span className="hidden sm:inline">Commencer</span>
+                              <span className="inline sm:hidden">Go</span>
+                            </>
+                          )}
+                          {order.status === 'preparing' && (
+                            <>
+                              <Bell size={16} />
+                              Prêt
+                            </>
+                          )}
+                          {order.status === 'ready' && (
+                            <>
+                              <CheckCircle size={16} />
+                              Livré
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                          className="px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1 md:gap-2 text-xs md:text-sm"
+                        >
+                          <XCircle size={16} />
+                          <span className="hidden sm:inline">Annuler</span>
+                        </button>
+                      </>
+                    )}
+                    {order.status === 'delivered' && (
+                      <div className="px-3 md:px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                        <CheckCircle size={16} />
+                        <span className="hidden sm:inline">Commande livrée</span>
+                        <span className="inline sm:hidden">Livrée</span>
+                      </div>
+                    )}
+                    {order.status === 'cancelled' && (
+                      <div className="px-3 md:px-4 py-2 bg-red-100 text-red-800 rounded-lg font-semibold flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                        <XCircle size={16} />
+                        <span className="hidden sm:inline">Commande annulée</span>
+                        <span className="inline sm:hidden">Annulée</span>
+                      </div>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!order.is_read && (
-                    <button
-                      onClick={() => handleMarkAsRead(order.id)}
-                      className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-1"
-                    >
-                      <CheckCircle size={16} />
-                      Marquer comme lu
-                    </button>
-                  )}
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getStatusColor(order.status)}`}>
-                    {getStatusIcon(order.status)}
-                    {getStatusLabel(order.status)}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteOrder(order.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    aria-label="Supprimer"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">Articles commandés:</h3>
-                <div className="space-y-2">
-                  {order.items.map(item => (
-                    <div key={item.id} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-blue-100 text-blue-800 font-semibold px-2 py-1 rounded text-sm">
-                          x{item.quantity}
-                        </span>
-                        <span className="text-gray-800">{item.item_name}</span>
-                      </div>
-                      <span className="font-semibold text-gray-800">
-                        {(item.price_at_order * item.quantity).toFixed(0)} HTG
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {order.notes && (
-                <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    <span className="font-semibold">Note: </span>
-                    {order.notes}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                <div className="text-xl font-bold text-gray-800">
-                  Total: {order.total_amount} HTG
-                </div>
-                <div className="flex gap-2">
-                  {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          const nextStatus =
-                            order.status === 'pending' ? 'preparing' :
-                            order.status === 'preparing' ? 'ready' :
-                            'delivered';
-                          handleStatusUpdate(order.id, nextStatus);
-                        }}
-                        className="px-6 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-md font-semibold flex items-center gap-2"
-                      >
-                        {order.status === 'pending' && (
-                          <>
-                            <ChefHat size={18} />
-                            Commencer
-                          </>
-                        )}
-                        {order.status === 'preparing' && (
-                          <>
-                            <Bell size={18} />
-                            Prêt
-                          </>
-                        )}
-                        {order.status === 'ready' && (
-                          <>
-                            <CheckCircle size={18} />
-                            Livré
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-                      >
-                        <XCircle size={18} />
-                        Annuler
-                      </button>
-                    </>
-                  )}
-                  {order.status === 'delivered' && (
-                    <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold flex items-center gap-2">
-                      <CheckCircle size={18} />
-                      Commande livrée
-                    </div>
-                  )}
-                  {order.status === 'cancelled' && (
-                    <div className="px-4 py-2 bg-red-100 text-red-800 rounded-lg font-semibold flex items-center gap-2">
-                      <XCircle size={18} />
-                      Commande annulée
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
