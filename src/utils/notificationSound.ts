@@ -27,7 +27,7 @@ export const initAudioContext = async () => {
   }
 };
 
-const playBeep = async () => {
+const playBeep = async (frequency: number = 800, duration: number = 0.3) => {
   if (!audioContext) {
     await initAudioContext();
   }
@@ -37,26 +37,32 @@ const playBeep = async () => {
     return;
   }
 
-  try {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+  return new Promise<void>((resolve) => {
+    try {
+      const oscillator = audioContext!.createOscillator();
+      const gainNode = audioContext!.createGain();
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext!.destination);
 
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      gainNode.gain.setValueAtTime(0.3, audioContext!.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext!.currentTime + duration);
 
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.start(audioContext!.currentTime);
+      oscillator.stop(audioContext!.currentTime + duration);
 
-    console.log('Beep played');
-  } catch (error) {
-    console.error('Error playing beep:', error);
-  }
+      setTimeout(() => {
+        console.log('Beep completed');
+        resolve();
+      }, duration * 1000 + 50);
+    } catch (error) {
+      console.error('Error playing beep:', error);
+      resolve();
+    }
+  });
 };
 
 export const playNotificationSound = async () => {
@@ -80,18 +86,20 @@ export const playNotificationSound = async () => {
     const playTripleBeep = async () => {
       if (!isPlaying) return;
 
-      console.log('Playing triple beep...');
-      await playBeep();
+      console.log('Playing triple beep sequence...');
 
-      await new Promise(resolve => setTimeout(resolve, 200));
-
+      await playBeep(800, 0.2);
       if (!isPlaying) return;
-      await playBeep();
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
+      await playBeep(1000, 0.2);
       if (!isPlaying) return;
-      await playBeep();
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      await playBeep(1200, 0.2);
+      console.log('Triple beep sequence completed');
     };
 
     await playTripleBeep();
