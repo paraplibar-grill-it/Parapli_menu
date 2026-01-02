@@ -4,6 +4,7 @@ import { getOrders, updateOrderStatus, deleteOrder, subscribeToOrders, markOrder
 import type { OrderWithItems } from '../types';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound, stopNotificationSound, isNotificationPlaying, initAudioContext } from '../utils/notificationSound';
+import { registerServiceWorker, requestNotificationPermission, sendNotification, getNotificationStatus } from '../utils/pushNotifications';
 
 const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -13,12 +14,19 @@ const OrdersPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'table' | 'amount'>('date');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<string>('default');
   const previousOrdersRef = useRef<string[]>([]);
   const soundEnabledRef = useRef(true);
+  const notificationsEnabledRef = useRef(false);
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  useEffect(() => {
+    notificationsEnabledRef.current = pushNotificationsEnabled;
+  }, [pushNotificationsEnabled]);
 
   useEffect(() => {
     let mounted = true;
@@ -27,6 +35,8 @@ const OrdersPage: React.FC = () => {
     const initializeOrders = async () => {
       try {
         await initAudioContext();
+        await registerServiceWorker();
+        setNotificationStatus(getNotificationStatus());
         await fetchOrders();
 
         if (!mounted) return;
@@ -58,6 +68,15 @@ const OrdersPage: React.FC = () => {
               console.log('Sound disabled, skipping sound');
               toast.success('Nouvelle commande reçue !', {
                 duration: 5000,
+              });
+            }
+
+            if (notificationsEnabledRef.current) {
+              console.log('Sending push notification...');
+              sendNotification('Nouvelle commande', {
+                body: 'Une nouvelle commande a été reçue. Cliquez pour voir les détails.',
+                tag: 'new-order',
+                requireInteraction: true,
               });
             }
 
@@ -176,6 +195,21 @@ const OrdersPage: React.FC = () => {
       setSoundEnabled(true);
       await initAudioContext();
       toast.success('Alertes sonores activées', { duration: 2000 });
+    }
+  };
+
+  const togglePushNotifications = async () => {
+    if (pushNotificationsEnabled) {
+      setPushNotificationsEnabled(false);
+      toast.success('Notifications navigateur désactivées', { duration: 2000 });
+    } else {
+      const permitted = await requestNotificationPermission();
+      if (permitted) {
+        setPushNotificationsEnabled(true);
+        toast.success('Notifications navigateur activées', { duration: 2000 });
+      } else {
+        toast.error('Permission de notification refusée', { duration: 2000 });
+      }
     }
   };
 
@@ -323,6 +357,26 @@ const OrdersPage: React.FC = () => {
             title={soundEnabled ? 'Désactiver les alertes sonores' : 'Activer les alertes sonores'}
           >
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </button>
+          <button
+            onClick={togglePushNotifications}
+            className={`p-2 md:p-3 rounded-lg transition-all ${
+              pushNotificationsEnabled
+                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                : notificationStatus === 'denied'
+                ? 'bg-red-100 text-red-600 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title={
+              notificationStatus === 'denied'
+                ? 'Notifications refusées par le navigateur'
+                : pushNotificationsEnabled
+                ? 'Désactiver les notifications navigateur'
+                : 'Activer les notifications navigateur'
+            }
+            disabled={notificationStatus === 'denied'}
+          >
+            <Bell size={20} />
           </button>
         </div>
       </div>
