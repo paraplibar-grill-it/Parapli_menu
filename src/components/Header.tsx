@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { signOut } from '../services/authService';
-import { Menu, LogOut, Umbrella, ShoppingBag } from 'lucide-react';
+import { Menu, LogOut, ShoppingBag } from 'lucide-react';
 import Button from './ui/Button';
 
 const Header: React.FC = () => {
@@ -27,9 +27,13 @@ const Header: React.FC = () => {
   return (
     <header className="py-6 bg-gradient-to-r from-primary via-secondary to-primary shadow-lg">
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-white">
-          <Umbrella size={32} className="text-white animate-float" />
-          <span className="text-white">Parapli Bar & Grill</span>
+        <Link to="/" className="flex items-center gap-3">
+          <img
+            src="/parapli.png"
+            alt="Parapli Bar & Grill"
+            className="h-14 w-auto object-contain animate-float drop-shadow-lg"
+          />
+          <span className="text-xl font-bold text-white hidden sm:inline">Parapli Bar & Grill</span>
         </Link>
         
         <div className="relative">

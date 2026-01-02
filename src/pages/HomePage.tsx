@@ -5,7 +5,6 @@ import MenuGrid from '../components/MenuGrid';
 import MenuQRCode from '../components/MenuQRCode';
 import SpecialOffersSection from '../components/SpecialOffersSection';
 import VirtualAssistant from '../components/VirtualAssistant';
-import { Umbrella } from 'lucide-react';
 
 const HomePage: React.FC = () => {
   const menuUrl = window.location.href;
@@ -13,9 +12,12 @@ const HomePage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <section className="text-center mb-16">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <Umbrella size={48} className="text-primary animate-float" />
-          <h1 className="text-5xl font-bold gradient-text">Parapli Bar</h1>
+        <div className="flex flex-col items-center justify-center gap-4 mb-8">
+          <img
+            src="/parapli.png"
+            alt="Parapli Bar & Grill"
+            className="h-28 w-auto object-contain animate-float drop-shadow-lg"
+          />
         </div>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Experience our delicious menu of drinks and snacks in a warm, welcoming atmosphere.
