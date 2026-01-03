@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
-import { sendNotification, requestNotificationPermission, getNotificationStatus } from '../utils/pushNotifications';
 import { ShoppingBag, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -16,12 +15,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack }) => {
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
-  const [notificationStatus, setNotificationStatus] = useState<string>('default');
-
-  useEffect(() => {
-    setNotificationStatus(getNotificationStatus());
-  }, []);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +39,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack }) => {
         quantity
       }));
 
-      const orderId = await createOrder(
+      await createOrder(
         parseInt(tableNumber),
         items,
         customerName || undefined,
@@ -56,15 +49,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack }) => {
       clearCart();
       setOrderPlaced(true);
       toast.success('Commande passée avec succès !', { duration: 3000 });
-
-      if (pushNotificationsEnabled) {
-        console.log('Sending customer confirmation notification...');
-        sendNotification('Commande confirmée', {
-          body: `Votre commande pour la table ${tableNumber} a été reçue. Numéro de commande: ${orderId.slice(0, 8)}`,
-          tag: `order-${orderId}`,
-          requireInteraction: false,
-        });
-      }
 
       setTimeout(() => {
         onBack();
@@ -77,20 +61,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack }) => {
     }
   };
 
-  const togglePushNotifications = async () => {
-    if (pushNotificationsEnabled) {
-      setPushNotificationsEnabled(false);
-      toast.success('Notifications désactivées', { duration: 2000 });
-    } else {
-      const permitted = await requestNotificationPermission();
-      if (permitted) {
-        setPushNotificationsEnabled(true);
-        toast.success('Notifications activées', { duration: 2000 });
-      } else {
-        toast.error('Permission refusée', { duration: 2000 });
-      }
-    }
-  };
 
   if (orderPlaced) {
     return (
@@ -199,21 +169,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack }) => {
                   />
                 </div>
 
-                <div className="pt-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={pushNotificationsEnabled}
-                      onChange={togglePushNotifications}
-                      disabled={notificationStatus === 'denied'}
-                      className="w-5 h-5 text-primary rounded cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-700">
-                      {notificationStatus === 'denied'
-                        ? 'Notifications refusées par le navigateur'
-                        : 'Recevoir une notification quand ma commande est prête'}
-                    </span>
-                  </label>
+                <div className="pt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    L'équipe de Parapli Bar a été notifiée de votre commande et la prépare. Un serveur vous apportera votre commande dès qu'elle sera prête.
+                  </p>
                 </div>
               </div>
 
