@@ -9,6 +9,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import OrdersPage from './pages/OrdersPage';
+import CheckoutPage from './pages/CheckoutPage';
 import { Clock, CreditCard, Wallet, Smartphone, Landmark } from 'lucide-react';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/admin/orders" element={<OrdersPage />} />
               </Routes>

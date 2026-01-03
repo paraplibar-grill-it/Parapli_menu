@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { Link, useLocation } from 'react-router-dom';
 import { signOut } from '../services/authService';
 import { Menu, LogOut, ShoppingBag } from 'lucide-react';
@@ -7,6 +8,7 @@ import Button from './ui/Button';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
+  const { cartItemCount } = useCart();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
@@ -36,15 +38,30 @@ const Header: React.FC = () => {
           <span className="text-xl font-bold text-white hidden sm:inline">Parapli Bar & Grill</span>
         </Link>
         
-        <div className="relative">
-          <button 
-            onClick={toggleMenu}
-            className="flex items-center focus:outline-none text-white hover:text-gray-200 transition-colors"
-            aria-expanded={isMenuOpen}
-            aria-controls="navigation-menu"
-          >
-            <Menu size={24} />
-          </button>
+        <div className="flex items-center gap-4">
+          {!user && location.pathname !== '/checkout' && (
+            <Link
+              to="/checkout"
+              className="relative p-2 hover:text-gray-200 transition-colors text-white"
+            >
+              <ShoppingBag size={24} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          <div className="relative">
+            <button
+              onClick={toggleMenu}
+              className="flex items-center focus:outline-none text-white hover:text-gray-200 transition-colors"
+              aria-expanded={isMenuOpen}
+              aria-controls="navigation-menu"
+            >
+              <Menu size={24} />
+            </button>
           
           {isMenuOpen && (
             <div 
@@ -104,6 +121,7 @@ const Header: React.FC = () => {
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </header>
