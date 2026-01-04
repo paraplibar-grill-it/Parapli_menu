@@ -161,12 +161,7 @@ export function subscribeToOrders(callback: (event?: any) => void) {
     supabase.removeChannel(ordersChannel);
   }
 
-  ordersChannel = supabase.channel('orders-changes', {
-    config: {
-      broadcast: { self: true },
-      presence: { key: 'orders' }
-    }
-  });
+  ordersChannel = supabase.channel('orders-changes');
 
   ordersChannel
     .on(
@@ -177,14 +172,22 @@ export function subscribeToOrders(callback: (event?: any) => void) {
         table: 'orders'
       },
       (payload: any) => {
-        console.log('Order change detected:', payload.eventType, payload);
-        callback(payload.eventType);
+        console.log('Raw order change payload:', JSON.stringify(payload, null, 2));
+        const eventType = payload?.eventType || payload?.event;
+        console.log('Event type detected:', eventType);
+        if (eventType) {
+          callback(eventType);
+        }
       }
     )
     .subscribe((status: string) => {
       console.log('Orders subscription status:', status);
       if (status === 'SUBSCRIBED') {
         console.log('Successfully subscribed to orders');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('Channel error during subscription');
+      } else if (status === 'TIMED_OUT') {
+        console.error('Subscription timed out');
       }
     });
 
