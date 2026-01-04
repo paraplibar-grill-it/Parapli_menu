@@ -48,6 +48,10 @@ export async function getOrders(): Promise<OrderWithItems[]> {
 
   if (ordersError) throw ordersError;
 
+  if (!orders || orders.length === 0) {
+    return [];
+  }
+
   const ordersWithItems: OrderWithItems[] = await Promise.all(
     orders.map(async (order) => {
       const { data: items, error: itemsError } = await supabase

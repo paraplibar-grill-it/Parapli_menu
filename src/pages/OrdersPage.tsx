@@ -95,6 +95,10 @@ const OrdersPage: React.FC = () => {
         return unsubscribe;
       } catch (error) {
         console.error('Error initializing orders:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+        toast.error('Erreur lors du chargement des commandes');
       }
     };
 
