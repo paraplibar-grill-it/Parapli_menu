@@ -3,7 +3,8 @@ import type { Announcement } from '../types';
 
 export async function createAnnouncement(
   title: string,
-  content: string
+  content: string,
+  imageUrl?: string
 ): Promise<Announcement> {
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -14,6 +15,7 @@ export async function createAnnouncement(
     .insert({
       title,
       content,
+      image_url: imageUrl,
       is_active: true,
       created_by: user.id
     })
@@ -54,13 +56,15 @@ export async function updateAnnouncement(
   id: string,
   title: string,
   content: string,
-  is_active: boolean
+  is_active: boolean,
+  imageUrl?: string
 ): Promise<Announcement> {
   const { data, error } = await supabase
     .from('announcements')
     .update({
       title,
       content,
+      image_url: imageUrl,
       is_active,
       updated_at: new Date().toISOString()
     })
