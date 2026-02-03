@@ -5,12 +5,15 @@ import MenuGrid from '../components/MenuGrid';
 import MenuQRCode from '../components/MenuQRCode';
 import SpecialOffersSection from '../components/SpecialOffersSection';
 import VirtualAssistant from '../components/VirtualAssistant';
+import AnnouncementPopup from '../components/AnnouncementPopup';
 
 const HomePage: React.FC = () => {
   const menuUrl = window.location.href;
-  
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <AnnouncementPopup />
+      <div className="container mx-auto px-4 py-8">
       <section className="text-center mb-16">
         <div className="flex flex-col items-center justify-center gap-4 mb-8">
           <img
@@ -60,7 +63,8 @@ const HomePage: React.FC = () => {
       </section>
 
       <VirtualAssistant />
-    </div>
+      </div>
+    </>
   );
 };
 

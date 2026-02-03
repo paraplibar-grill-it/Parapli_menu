@@ -4,6 +4,7 @@ import { useMenu } from '../context/MenuContext';
 import { createMenuItem, updateMenuItem, deleteMenuItem, createCategory, updateCategory, deleteCategory } from '../services/menuService';
 import { reorderCategories, reorderMenuItems } from '../services/menuService';
 import { createNewsEvent, updateNewsEvent, deleteNewsEvent, getNewsEvents } from '../services/newsService';
+import { getAdminAnnouncements, deleteAnnouncement } from '../services/announcementService';
 import { useAuth } from '../context/AuthContext';
 import MenuGrid from '../components/MenuGrid';
 import MenuItemDragList from '../components/MenuItemDragList';
@@ -13,11 +14,12 @@ import MenuItemForm from '../components/MenuItemForm';
 import CategoryForm from '../components/CategoryForm';
 import CategoryDragList from '../components/CategoryDragList';
 import NewsEventForm from '../components/NewsEventForm';
+import AnnouncementForm from '../components/AnnouncementForm';
 import MenuQRCode from '../components/MenuQRCode';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
-import { Plus, Bell, ArrowUpDown } from 'lucide-react';
-import type { MenuItem, MenuItemInput, Category, CategoryInput, NewsEvent, NewsEventInput } from '../types';
+import { Plus, Bell, ArrowUpDown, Megaphone, Trash2, Edit2 } from 'lucide-react';
+import type { MenuItem, MenuItemInput, Category, CategoryInput, NewsEvent, NewsEventInput, Announcement } from '../types';
 import toast, { Toaster } from 'react-hot-toast';
 
 const AdminPage: React.FC = () => {
@@ -28,13 +30,16 @@ const AdminPage: React.FC = () => {
   const [isMenuItemModalOpen, setIsMenuItemModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isNewsEventModalOpen, setIsNewsEventModalOpen] = useState(false);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isReorderingMenuItems, setIsReorderingMenuItems] = useState(false);
-  const [deleteType, setDeleteType] = useState<'menuItem' | 'category' | 'newsEvent'>('menuItem');
+  const [deleteType, setDeleteType] = useState<'menuItem' | 'category' | 'newsEvent' | 'announcement'>('menuItem');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedNewsEventId, setSelectedNewsEventId] = useState<string | null>(null);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
   const [newsEvents, setNewsEvents] = useState<NewsEvent[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
   React.useEffect(() => {
     if (!authLoading && !user) {
@@ -52,8 +57,22 @@ const AdminPage: React.FC = () => {
         toast.error('Failed to load news and events');
       }
     };
-    
+
     fetchNewsEvents();
+  }, []);
+
+  React.useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await getAdminAnnouncements();
+        setAnnouncements(data);
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        toast.error('Failed to load announcements');
+      }
+    };
+
+    fetchAnnouncements();
   }, []);
   
   if (authLoading) {
@@ -66,16 +85,20 @@ const AdminPage: React.FC = () => {
   
   if (!user) return null;
   
-  const selectedMenuItem = selectedItemId 
+  const selectedMenuItem = selectedItemId
     ? menuItems.find(item => item.id === selectedItemId)
     : undefined;
-    
+
   const selectedCategory = selectedCategoryId
     ? categories.find(cat => cat.id === selectedCategoryId)
     : undefined;
-    
+
   const selectedNewsEvent = selectedNewsEventId
     ? newsEvents.find(event => event.id === selectedNewsEventId)
+    : undefined;
+
+  const selectedAnnouncement = selectedAnnouncementId
+    ? announcements.find(ann => ann.id === selectedAnnouncementId)
     : undefined;
   
   const menuUrl = window.location.origin;
@@ -211,6 +234,27 @@ const AdminPage: React.FC = () => {
     }
   };
   
+  const handleAddAnnouncement = () => {
+    setSelectedAnnouncementId(null);
+    setIsAnnouncementModalOpen(true);
+  };
+
+  const handleEditAnnouncement = (id: string) => {
+    setSelectedAnnouncementId(id);
+    setIsAnnouncementModalOpen(true);
+  };
+
+  const handleDeleteAnnouncement = (id: string) => {
+    setSelectedAnnouncementId(id);
+    setDeleteType('announcement');
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleAnnouncementSubmit = async () => {
+    const updatedAnnouncements = await getAdminAnnouncements();
+    setAnnouncements(updatedAnnouncements);
+  };
+
   const handleConfirmDelete = async () => {
     try {
       if (deleteType === 'menuItem' && selectedItemId) {
@@ -226,8 +270,13 @@ const AdminPage: React.FC = () => {
         toast.success('News/Event deleted successfully');
         const updatedEvents = await getNewsEvents();
         setNewsEvents(updatedEvents);
+      } else if (deleteType === 'announcement' && selectedAnnouncementId) {
+        await deleteAnnouncement(selectedAnnouncementId);
+        toast.success('Announcement deleted successfully');
+        const updatedAnnouncements = await getAdminAnnouncements();
+        setAnnouncements(updatedAnnouncements);
       }
-      
+
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -241,9 +290,63 @@ const AdminPage: React.FC = () => {
       
       <section className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage your menu items, categories, and news/events</p>
+        <p className="text-gray-600">Manage your menu items, categories, announcements, and news/events</p>
       </section>
-      
+
+      {/* Announcements Section */}
+      <section className="mb-12">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Megaphone size={20} />
+            Announcements
+          </h2>
+          <Button onClick={handleAddAnnouncement}>
+            <Plus size={16} className="mr-1" />
+            Add Announcement
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {announcements.map((announcement) => (
+            <div key={announcement.id} className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-600">
+              <h3 className="font-semibold text-lg mb-2 line-clamp-2">{announcement.title}</h3>
+              <p className="text-gray-600 text-sm mb-3 line-clamp-3">{announcement.content}</p>
+              <div className="flex items-center justify-between">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  announcement.is_active
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {announcement.is_active ? 'Active' : 'Inactive'}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditAnnouncement(announcement.id)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    aria-label="Edit"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAnnouncement(announcement.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    aria-label="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {announcements.length === 0 && (
+            <div className="col-span-full bg-gray-50 rounded-lg p-8 text-center">
+              <Megaphone size={32} className="mx-auto text-gray-400 mb-2" />
+              <p className="text-gray-500">No announcements yet. Create your first one!</p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* News/Events Section */}
       <section className="mb-12">
         <div className="flex justify-between items-center mb-4">
@@ -457,7 +560,20 @@ const AdminPage: React.FC = () => {
           onCancel={() => setIsNewsEventModalOpen(false)}
         />
       </Modal>
-      
+
+      {/* Announcement Modal */}
+      <Modal
+        isOpen={isAnnouncementModalOpen}
+        onClose={() => setIsAnnouncementModalOpen(false)}
+        title={selectedAnnouncement ? 'Edit Announcement' : 'Create Announcement'}
+      >
+        <AnnouncementForm
+          announcement={selectedAnnouncement}
+          onSubmit={handleAnnouncementSubmit}
+          onClose={() => setIsAnnouncementModalOpen(false)}
+        />
+      </Modal>
+
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isDeleteModalOpen}

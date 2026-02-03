@@ -61,6 +61,16 @@ export interface OrderWithItems extends Order {
   items: OrderItem[];
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
 export type MenuItemInput = Omit<MenuItem, 'id' | 'created_at'>;
 export type CategoryInput = Omit<Category, 'id' | 'created_at'>;
 export type NewsEventInput = Omit<NewsEvent, 'id' | 'created_at' | 'updated_at'>;
