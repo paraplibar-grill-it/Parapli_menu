@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MenuProvider } from './context/MenuContext';
@@ -11,8 +11,35 @@ import AdminPage from './pages/AdminPage';
 import OrdersPage from './pages/OrdersPage';
 import CheckoutPage from './pages/CheckoutPage';
 import { Clock, CreditCard, Wallet, Smartphone, Landmark } from 'lucide-react';
+import { registerServiceWorker, requestNotificationPermission } from './utils/pushNotifications';
+import { subscribeToOrders } from './services/orderService';
+import { playNotificationSound, initAudioContext } from './utils/notificationSound';
 
 function App() {
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        await initAudioContext();
+        await registerServiceWorker();
+        const permitted = await requestNotificationPermission();
+
+        if (permitted) {
+          const unsubscribe = subscribeToOrders((event: string) => {
+            if (event === 'INSERT') {
+              playNotificationSound().catch(err => console.error('Error playing sound:', err));
+            }
+          });
+
+          return unsubscribe;
+        }
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+  }, []);
+
   return (
     <Router>
       <AuthProvider>
