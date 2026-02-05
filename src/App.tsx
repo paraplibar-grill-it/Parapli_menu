@@ -11,9 +11,10 @@ import AdminPage from './pages/AdminPage';
 import OrdersPage from './pages/OrdersPage';
 import CheckoutPage from './pages/CheckoutPage';
 import { Clock, CreditCard, Wallet, Smartphone, Landmark } from 'lucide-react';
-import { registerServiceWorker, requestNotificationPermission } from './utils/pushNotifications';
+import { registerServiceWorker, requestNotificationPermission, sendNotification } from './utils/pushNotifications';
 import { subscribeToOrders } from './services/orderService';
 import { playNotificationSound, initAudioContext } from './utils/notificationSound';
+import { getNotificationsEnabled, getSoundEnabled } from './utils/notificationPreferences';
 
 function App() {
   useEffect(() => {
@@ -26,7 +27,20 @@ function App() {
         if (permitted) {
           const unsubscribe = subscribeToOrders((event: string) => {
             if (event === 'INSERT') {
-              playNotificationSound().catch(err => console.error('Error playing sound:', err));
+              const notificationsEnabled = getNotificationsEnabled();
+              const soundEnabled = getSoundEnabled();
+
+              if (soundEnabled) {
+                playNotificationSound().catch(err => console.error('Error playing sound:', err));
+              }
+
+              if (notificationsEnabled) {
+                sendNotification('Nouvelle commande', {
+                  body: 'Une nouvelle commande a été reçue. Cliquez pour voir les détails.',
+                  tag: 'new-order',
+                  requireInteraction: true,
+                });
+              }
             }
           });
 

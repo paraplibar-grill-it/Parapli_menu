@@ -5,6 +5,7 @@ import type { OrderWithItems } from '../types';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound, stopNotificationSound, isNotificationPlaying, initAudioContext } from '../utils/notificationSound';
 import { registerServiceWorker, requestNotificationPermission, sendNotification, getNotificationStatus } from '../utils/pushNotifications';
+import { getNotificationsEnabled, setNotificationsEnabled, getSoundEnabled, setSoundEnabled } from '../utils/notificationPreferences';
 
 const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -12,20 +13,22 @@ const OrdersPage: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [searchTable, setSearchTable] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'table' | 'amount'>('date');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabledState] = useState(getSoundEnabled());
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  const [pushNotificationsEnabled, setPushNotificationsEnabledState] = useState(getNotificationsEnabled());
   const [notificationStatus, setNotificationStatus] = useState<string>('default');
   const previousOrdersRef = useRef<string[]>([]);
-  const soundEnabledRef = useRef(true);
-  const notificationsEnabledRef = useRef(false);
+  const soundEnabledRef = useRef(getSoundEnabled());
+  const notificationsEnabledRef = useRef(getNotificationsEnabled());
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
+    setSoundEnabled(soundEnabled);
   }, [soundEnabled]);
 
   useEffect(() => {
     notificationsEnabledRef.current = pushNotificationsEnabled;
+    setNotificationsEnabled(pushNotificationsEnabled);
   }, [pushNotificationsEnabled]);
 
   useEffect(() => {
@@ -194,9 +197,9 @@ const OrdersPage: React.FC = () => {
   const toggleSound = async () => {
     if (soundEnabled) {
       stopNotificationSound();
-      setSoundEnabled(false);
+      setSoundEnabledState(false);
     } else {
-      setSoundEnabled(true);
+      setSoundEnabledState(true);
       await initAudioContext();
       toast.success('Alertes sonores activées', { duration: 2000 });
     }
@@ -204,12 +207,12 @@ const OrdersPage: React.FC = () => {
 
   const togglePushNotifications = async () => {
     if (pushNotificationsEnabled) {
-      setPushNotificationsEnabled(false);
+      setPushNotificationsEnabledState(false);
       toast.success('Notifications navigateur désactivées', { duration: 2000 });
     } else {
       const permitted = await requestNotificationPermission();
       if (permitted) {
-        setPushNotificationsEnabled(true);
+        setPushNotificationsEnabledState(true);
         toast.success('Notifications navigateur activées', { duration: 2000 });
       } else {
         toast.error('Permission de notification refusée', { duration: 2000 });
