@@ -104,14 +104,19 @@ Deno.serve(async (req: Request) => {
       </html>
     `;
 
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+        Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "orders@paraplibar.com",
+        from: "onboarding@resend.dev",
         to: "paraplibar@gmail.com",
         subject: `Nouvelle Commande - Table ${orderData.tableNumber}`,
         html: htmlContent,
