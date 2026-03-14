@@ -1,6 +1,50 @@
 import { supabase } from '../lib/supabase';
 import type { Order, OrderItem, OrderWithItems, OrderInput, OrderItemInput } from '../types';
 
+async function sendOrderNotificationEmail(
+  orderId: string,
+  tableNumber: number,
+  items: { name: string; price: number; quantity: number }[],
+  totalAmount: number,
+  customerName?: string,
+  notes?: string
+): Promise<void> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/send-order-notification`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          orderId,
+          tableNumber,
+          customerName,
+          items: items.map(item => ({
+            itemName: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          totalAmount,
+          notes,
+          createdAt: new Date().toISOString(),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Failed to send order notification email');
+    }
+  } catch (error) {
+    console.error('Error sending order notification:', error);
+  }
+}
+
 export async function createOrder(
   tableNumber: number,
   items: { menuItemId: string; name: string; price: number; quantity: number }[],
@@ -36,6 +80,15 @@ export async function createOrder(
     .insert(orderItems);
 
   if (itemsError) throw itemsError;
+
+  await sendOrderNotificationEmail(
+    order.id,
+    tableNumber,
+    items,
+    totalAmount,
+    customerName,
+    notes
+  );
 
   return order.id;
 }
