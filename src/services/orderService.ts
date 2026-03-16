@@ -96,7 +96,7 @@ export async function createOrder(
 export async function getOrders(): Promise<OrderWithItems[]> {
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (ordersError) throw ordersError;
@@ -105,31 +105,61 @@ export async function getOrders(): Promise<OrderWithItems[]> {
     return [];
   }
 
+  const { data: allItems, error: itemsError } = await supabase
+    .from('order_items')
+    .select('*');
+
+  if (itemsError) throw itemsError;
+
+  const itemsByOrderId = (allItems || []).reduce((acc, item) => {
+    if (!acc[item.order_id]) acc[item.order_id] = [];
+    acc[item.order_id].push(item);
+    return acc;
+  }, {} as Record<string, typeof allItems>);
+
   return orders.map(order => ({
     ...order,
-    items: order.order_items || []
+    items: itemsByOrderId[order.id] || []
   }));
 }
 
 export async function getOrdersByStatus(status: string): Promise<OrderWithItems[]> {
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*')
     .eq('status', status)
     .order('created_at', { ascending: false });
 
   if (ordersError) throw ordersError;
 
+  if (!orders || orders.length === 0) {
+    return [];
+  }
+
+  const orderIds = orders.map(o => o.id);
+  const { data: allItems, error: itemsError } = await supabase
+    .from('order_items')
+    .select('*')
+    .in('order_id', orderIds);
+
+  if (itemsError) throw itemsError;
+
+  const itemsByOrderId = (allItems || []).reduce((acc, item) => {
+    if (!acc[item.order_id]) acc[item.order_id] = [];
+    acc[item.order_id].push(item);
+    return acc;
+  }, {} as Record<string, typeof allItems>);
+
   return orders.map(order => ({
     ...order,
-    items: order.order_items || []
+    items: itemsByOrderId[order.id] || []
   }));
 }
 
 export async function getOrderById(orderId: string): Promise<OrderWithItems | null> {
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -137,9 +167,16 @@ export async function getOrderById(orderId: string): Promise<OrderWithItems | nu
 
   if (!order) return null;
 
+  const { data: items, error: itemsError } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', orderId);
+
+  if (itemsError) throw itemsError;
+
   return {
     ...order,
-    items: order.order_items || []
+    items: items || []
   };
 }
 
