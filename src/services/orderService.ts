@@ -96,7 +96,7 @@ export async function createOrder(
 export async function getOrders(): Promise<OrderWithItems[]> {
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
-    .select('*')
+    .select('*, order_items(*)')
     .order('created_at', { ascending: false });
 
   if (ordersError) throw ordersError;
@@ -105,72 +105,41 @@ export async function getOrders(): Promise<OrderWithItems[]> {
     return [];
   }
 
-  const ordersWithItems: OrderWithItems[] = await Promise.all(
-    orders.map(async (order) => {
-      const { data: items, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', order.id);
-
-      if (itemsError) throw itemsError;
-
-      return {
-        ...order,
-        items: items || []
-      };
-    })
-  );
-
-  return ordersWithItems;
+  return orders.map(order => ({
+    ...order,
+    items: order.order_items || []
+  }));
 }
 
 export async function getOrdersByStatus(status: string): Promise<OrderWithItems[]> {
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
-    .select('*')
+    .select('*, order_items(*)')
     .eq('status', status)
     .order('created_at', { ascending: false });
 
   if (ordersError) throw ordersError;
 
-  const ordersWithItems: OrderWithItems[] = await Promise.all(
-    orders.map(async (order) => {
-      const { data: items, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', order.id);
-
-      if (itemsError) throw itemsError;
-
-      return {
-        ...order,
-        items: items || []
-      };
-    })
-  );
-
-  return ordersWithItems;
+  return orders.map(order => ({
+    ...order,
+    items: order.order_items || []
+  }));
 }
 
 export async function getOrderById(orderId: string): Promise<OrderWithItems | null> {
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('*')
+    .select('*, order_items(*)')
     .eq('id', orderId)
-    .single();
+    .maybeSingle();
 
   if (orderError) throw orderError;
 
-  const { data: items, error: itemsError } = await supabase
-    .from('order_items')
-    .select('*')
-    .eq('order_id', orderId);
-
-  if (itemsError) throw itemsError;
+  if (!order) return null;
 
   return {
     ...order,
-    items: items || []
+    items: order.order_items || []
   };
 }
 
