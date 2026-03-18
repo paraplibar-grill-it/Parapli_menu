@@ -41,7 +41,7 @@ const PinnedItemsSection: React.FC = () => {
           <div className="h-1 w-12 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"></div>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Découvrez nos plats disponibles en ce moment
+          Nos plats disponibles en ce moment
         </p>
       </div>
 
