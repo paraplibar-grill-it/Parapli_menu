@@ -6,6 +6,7 @@ export const getMenuItems = async (): Promise<MenuItem[]> => {
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
+    .order('is_pinned', { ascending: false })
     .order('order_index', { ascending: true });
 
   if (error) throw error;
@@ -17,6 +18,7 @@ export const getMenuItemsByCategory = async (categoryId: string): Promise<MenuIt
     .from('menu_items')
     .select('*')
     .eq('category_id', categoryId)
+    .order('is_pinned', { ascending: false })
     .order('order_index', { ascending: true });
 
   if (error) throw error;
@@ -112,6 +114,29 @@ export const reorderMenuItems = async (itemIds: string[]): Promise<void> => {
   });
 
   if (error) throw error;
+};
+
+export const togglePinnedMenuItem = async (id: string, isPinned: boolean): Promise<MenuItem> => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .update({ is_pinned: isPinned })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getPinnedMenuItems = async (): Promise<MenuItem[]> => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .eq('is_pinned', true)
+    .order('order_index', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 };
 
 // Subscribe to real-time changes

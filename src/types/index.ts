@@ -10,6 +10,7 @@ export interface MenuItem {
   sub_category?: string;
   is_special_offer?: boolean;
   original_price?: number;
+  is_pinned?: boolean;
 }
 
 export interface Category {

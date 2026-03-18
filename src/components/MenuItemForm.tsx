@@ -40,7 +40,8 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
     tags: [],
     sub_category: '',
     is_special_offer: false,
-    original_price: undefined
+    original_price: undefined,
+    is_pinned: false
   });
   
   useEffect(() => {
@@ -54,7 +55,8 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
         tags: item.tags || [],
         sub_category: item.sub_category || '',
         is_special_offer: item.is_special_offer || false,
-        original_price: item.original_price
+        original_price: item.original_price,
+        is_pinned: item.is_pinned || false
       });
     }
   }, [item]);
@@ -95,6 +97,13 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
       ...formData,
       is_special_offer: isSpecial,
       original_price: isSpecial && !formData.original_price ? formData.price : formData.original_price
+    });
+  };
+
+  const handlePinnedToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      is_pinned: e.target.checked
     });
   };
 
@@ -154,6 +163,22 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
         fullWidth
       />
       
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            id="is_pinned"
+            name="is_pinned"
+            checked={formData.is_pinned || false}
+            onChange={handlePinnedToggle}
+            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          />
+          <label htmlFor="is_pinned" className="text-sm font-medium text-gray-700">
+            Pin this item (highlight as available/recommended)
+          </label>
+        </div>
+      </div>
+
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-3">
           <input

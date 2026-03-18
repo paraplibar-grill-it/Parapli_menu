@@ -52,7 +52,19 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   const shouldShowImage = item.image_url && isValidImageUrl(item.image_url) && !imageError;
 
   return (
-    <div className="bg-white border-2 border-secondary/20 rounded-xl p-4 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-secondary">
+    <div className={`bg-white rounded-xl p-4 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+      item.is_pinned
+        ? 'border-2 border-emerald-400 shadow-lg shadow-emerald-100'
+        : 'border-2 border-secondary/20 hover:border-secondary'
+    }`}>
+      {item.is_pinned && (
+        <div className="mb-2 inline-flex items-center gap-1 w-fit">
+          <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+            DISPONIBLE
+          </span>
+        </div>
+      )}
       <div className="flex gap-4 mb-4">
         {shouldShowImage && (
           <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
