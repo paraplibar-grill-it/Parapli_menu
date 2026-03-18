@@ -4,7 +4,6 @@ import CategoryNavigation from '../components/CategoryNavigation';
 import MenuGrid from '../components/MenuGrid';
 import MenuQRCode from '../components/MenuQRCode';
 import SpecialOffersSection from '../components/SpecialOffersSection';
-import PinnedItemsSection from '../components/PinnedItemsSection';
 import VirtualAssistant from '../components/VirtualAssistant';
 import AnnouncementPopup from '../components/AnnouncementPopup';
 
@@ -29,8 +28,6 @@ const HomePage: React.FC = () => {
       </section>
       
       <SpecialOffersSection />
-
-      <PinnedItemsSection />
 
       <section className="mb-16">
         <div className="text-center mb-8">
